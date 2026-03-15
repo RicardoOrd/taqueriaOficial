@@ -1,9 +1,7 @@
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
-
-// Inicializar DB al arrancar
-require('./db/database').getDb();
+const { initSchema } = require('./db/database');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -28,10 +26,18 @@ app.get('/api/health', (_, res) => res.json({ status: 'ok', time: new Date().toI
 app.get('*', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ── Arrancar servidor ──────────────────────────────────
-app.listen(PORT, () => {
-  console.log('');
-  console.log('🌮  Taquería Comandas');
-  console.log(`✅  Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📱  Abre esa URL en tu celular/iPad (misma red WiFi)`);
-  console.log('');
-});
+if (!process.env.VERCEL) {
+  // Inicializar schema y luego arrancar
+  initSchema().then(() => {
+    app.listen(PORT, () => {
+      console.log('');
+      console.log('🌮  Taquería Comandas');
+      console.log(`✅  Servidor conectado a Turso y corriendo en http://localhost:${PORT}`);
+      console.log(`📱  Abre esa URL en tu celular/iPad (misma red WiFi)`);
+      console.log('');
+    });
+  });
+}
+
+// ── Exportar para Vercel (Serverless) ──────────────────
+module.exports = app;
