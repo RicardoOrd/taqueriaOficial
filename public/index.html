@@ -109,8 +109,28 @@
        UTILS
     ══════════════════════════════════════════ */
     const fmt = n => `$${Number(n || 0).toFixed(2)}`;
-    const fmtTime = iso => iso ? new Date(iso).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : '';
-    const today = () => new Date().toISOString().slice(0, 10);
+    
+    // Convertir de forma confiable a la zona horaria de Hermosillo
+    const fmtTime = iso => {
+      if (!iso) return '';
+      // Si la fecha ya viene del servidor sin 'Z', el navegador asume hora local,
+      // lo cual desvirtúa la hora si la PC está en otra zona.
+      // Así que la forzamos a interpretarse como si el navegador estuviera siempre en Hermosillo.
+      const d = new Date(iso + (iso.includes('Z') ? '' : 'Z'));
+      return new Intl.DateTimeFormat('es-MX', {
+        timeZone: 'America/Hermosillo',
+        hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short'
+      }).format(d);
+    };
+
+    const today = () => {
+      // Usar en-CA nos da formato YYYY-MM-DD directamente
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Hermosillo',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date());
+    };
+
     const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     const orderTotal = o => (o?.items || []).reduce((s, i) => s + i.price * i.qty, 0);
 
