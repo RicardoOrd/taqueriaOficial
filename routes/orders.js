@@ -5,6 +5,16 @@ const { authMiddleware } = require('./middleware');
 const router = express.Router();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
+// Helper para obtener fecha/hora actual en America/Hermosillo
+// Nota: America/Hermosillo es fijo en MST (UTC-7) sin horario de verano.
+function getHermosilloTime() {
+  const date = new Date();
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const offset = -7; // UTC-7 para Hermosillo
+  const hermosilloDate = new Date(utc + (3600000 * offset));
+  return hermosilloDate.toISOString().replace('T', ' ').substring(0, 19);
+}
+
 // Helper asíncrono para obtener una orden completa con sus items
 async function getFullOrder(db, orderId) {
   const orderRes = await db.execute({
@@ -92,12 +102,13 @@ router.get('/report', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
   const { label, items } = req.body;
   const id = uid();
+  const hermosilloTime = getHermosilloTime();
 
   try {
     const statements = [
       {
-        sql: `INSERT INTO orders (id, label, status, created_at) VALUES (?, ?, 'active', datetime('now'))`,
-        args: [id, label || 'Comanda']
+        sql: `INSERT INTO orders (id, label, status, created_at) VALUES (?, ?, 'active', ?)`,
+        args: [id, label || 'Comanda', hermosilloTime]
       }
     ];
 
@@ -125,6 +136,7 @@ router.post('/', authMiddleware, async (req, res) => {
 router.put('/:id', authMiddleware, async (req, res) => {
   const id = req.params.id;
   const { label, items, status, total, paid, change_amt } = req.body;
+  const hermosilloTime = getHermosilloTime();
 
   try {
     const existingRes = await db.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [id] });
@@ -141,7 +153,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
             total      = COALESCE(?, total),
             paid       = COALESCE(?, paid),
             change_amt = COALESCE(?, change_amt),
-            paid_at    = CASE WHEN ? = 'paid' AND paid_at IS NULL THEN datetime('now') ELSE paid_at END
+            paid_at    = CASE WHEN ? = 'paid' AND paid_at IS NULL THEN ? ELSE paid_at END
           WHERE id = ?
         `,
         args: [
@@ -151,6 +163,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
           paid != null ? paid : null,
           change_amt != null ? change_amt : null,
           status || existing.status,
+          hermosilloTime,
           id
         ]
       }

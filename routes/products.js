@@ -5,6 +5,15 @@ const { authMiddleware } = require('./middleware');
 const router = express.Router();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
+// Helper para obtener fecha/hora actual en America/Hermosillo
+function getHermosilloTime() {
+  const date = new Date();
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const offset = -7; // UTC-7 para Hermosillo
+  const hermosilloDate = new Date(utc + (3600000 * offset));
+  return hermosilloDate.toISOString().replace('T', ' ').substring(0, 19);
+}
+
 // GET /api/products
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -33,11 +42,12 @@ router.post('/', authMiddleware, async (req, res) => {
   if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
 
   const id = uid();
+  const hermosilloTime = getHermosilloTime();
 
   try {
     await db.execute({
-      sql: 'INSERT INTO products (id, name, price, category, image) VALUES (?, ?, ?, ?, ?)',
-      args: [id, name.trim(), parseFloat(price) || 0, category || 'Tacos', image || null]
+      sql: 'INSERT INTO products (id, name, price, category, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      args: [id, name.trim(), parseFloat(price) || 0, category || 'Tacos', image || null, hermosilloTime, hermosilloTime]
     });
 
     const result = await db.execute({
@@ -56,6 +66,7 @@ router.post('/', authMiddleware, async (req, res) => {
 router.put('/:id', authMiddleware, async (req, res) => {
   const { name, price, category, image, active } = req.body;
   const id = req.params.id;
+  const hermosilloTime = getHermosilloTime();
 
   try {
     const existingResult = await db.execute({
@@ -78,7 +89,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
           category   = COALESCE(?, category),
           image      = ?,
           active     = COALESCE(?, active),
-          updated_at = datetime('now')
+          updated_at = ?
         WHERE id = ?
       `,
       args: [
@@ -87,6 +98,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         category || null,
         finalImage,
         active != null ? (active ? 1 : 0) : null,
+        hermosilloTime,
         id
       ]
     });
@@ -106,9 +118,10 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // DELETE /api/products/:id  (soft delete)
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    const hermosilloTime = getHermosilloTime();
     const result = await db.execute({
-      sql: "UPDATE products SET active = 0, updated_at = datetime('now') WHERE id = ?",
-      args: [req.params.id]
+      sql: "UPDATE products SET active = 0, updated_at = ? WHERE id = ?",
+      args: [hermosilloTime, req.params.id]
     });
 
     if (result.rowsAffected === 0) {
