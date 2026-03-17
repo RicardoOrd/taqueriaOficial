@@ -1,85 +1,123 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0f0a07">
-<title>Taquería — Comandas</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-:root{
-  --bg:#0f0a07;--s1:#1a1008;--s2:#231509;--s3:#2d1c0e;
-  --pri:#e85d04;--amb:#f4a020;
-  --cr:#fdf0d5;--mu:#7a5c42;--dim:#3d2510;
-  --dn:#c1121f;--ok:#2d6a4f;--gr:#52b788;
-  --bd:#281708;
-}
-html,body{height:100%;background:var(--bg);}
-body{display:flex;justify-content:center;align-items:flex-start;font-family:'Nunito',sans-serif;}
-#root{width:100%;max-width:480px;min-height:100vh;}
-button,input,select{font-family:'Nunito',sans-serif;}
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
-
-/* ══════════════════════════════════════════
-   API CLIENT
-══════════════════════════════════════════ */
-const BASE = '';   // mismo origen — si corres el frontend por separado cambia a 'http://localhost:3000'
-
-function getToken() { return localStorage.getItem('tq_token'); }
-function setToken(t) { t ? localStorage.setItem('tq_token', t) : localStorage.removeItem('tq_token'); }
-
-async function api(method, path, body) {
-  const opts = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {})
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0a07">
+  <title>Taquería — Comandas</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(BASE + path, opts);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-  return data;
-}
 
-const API = {
-  login:          b  => api('POST', '/api/auth/login', b),
-  getProducts:    () => api('GET',  '/api/products'),
-  createProduct:  b  => api('POST', '/api/products', b),
-  updateProduct:  (id, b) => api('PUT', `/api/products/${id}`, b),
-  deleteProduct:  id => api('DELETE', `/api/products/${id}`),
-  getOrders:      () => api('GET',  '/api/orders'),
-  createOrder:    b  => api('POST', '/api/orders', b),
-  updateOrder:    (id, b) => api('PUT', `/api/orders/${id}`, b),
-  cancelOrder:    id => api('DELETE', `/api/orders/${id}`),
-  getReport:      d  => api('GET',  `/api/orders/report?date=${d}`),
-};
+    :root {
+      --bg: #0f0a07;
+      --s1: #1a1008;
+      --s2: #231509;
+      --s3: #2d1c0e;
+      --pri: #e85d04;
+      --amb: #f4a020;
+      --cr: #fdf0d5;
+      --mu: #7a5c42;
+      --dim: #3d2510;
+      --dn: #c1121f;
+      --ok: #2d6a4f;
+      --gr: #52b788;
+      --bd: #281708;
+    }
 
-/* ══════════════════════════════════════════
-   UTILS
-══════════════════════════════════════════ */
-const fmt     = n  => `$${Number(n||0).toFixed(2)}`;
-const fmtTime = iso => iso ? new Date(iso).toLocaleString('es-MX',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}) : '';
-const today   = () => new Date().toISOString().slice(0,10);
-const uid     = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-const orderTotal = o => (o?.items||[]).reduce((s,i) => s + i.price * i.qty, 0);
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+    }
 
-/* ══════════════════════════════════════════
-   ESTILOS GLOBALES
-══════════════════════════════════════════ */
-const CSS = `
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    #root {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    select {
+      font-family: 'Nunito', sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    /* ══════════════════════════════════════════
+       API CLIENT
+    ══════════════════════════════════════════ */
+    const BASE = '';   // mismo origen — si corres el frontend por separado cambia a 'http://localhost:3000'
+
+    function getToken() { return localStorage.getItem('tq_token'); }
+    function setToken(t) { t ? localStorage.setItem('tq_token', t) : localStorage.removeItem('tq_token'); }
+
+    async function api(method, path, body) {
+      const opts = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {})
+        }
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(BASE + path, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+      return data;
+    }
+
+    const API = {
+      login: b => api('POST', '/api/auth/login', b),
+      getProducts: () => api('GET', '/api/products'),
+      createProduct: b => api('POST', '/api/products', b),
+      updateProduct: (id, b) => api('PUT', `/api/products/${id}`, b),
+      deleteProduct: id => api('DELETE', `/api/products/${id}`),
+      getOrders: () => api('GET', '/api/orders'),
+      createOrder: b => api('POST', '/api/orders', b),
+      updateOrder: (id, b) => api('PUT', `/api/orders/${id}`, b),
+      cancelOrder: id => api('DELETE', `/api/orders/${id}`),
+      getReport: d => api('GET', `/api/orders/report?date=${d}`),
+    };
+
+    /* ══════════════════════════════════════════
+       UTILS
+    ══════════════════════════════════════════ */
+    const fmt = n => `$${Number(n || 0).toFixed(2)}`;
+    const fmtTime = iso => iso ? new Date(iso).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : '';
+    const today = () => new Date().toISOString().slice(0, 10);
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const orderTotal = o => (o?.items || []).reduce((s, i) => s + i.price * i.qty, 0);
+
+    /* ══════════════════════════════════════════
+       ESTILOS GLOBALES
+    ══════════════════════════════════════════ */
+    const CSS = `
 .app{display:flex;flex-direction:column;min-height:100vh;background:var(--bg);color:var(--cr);}
 .hdr{background:var(--s1);padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
 .hdr-title{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--pri);letter-spacing:1px;}
@@ -103,6 +141,9 @@ const CSS = `
 .inp{background:var(--s2);border:1px solid var(--dim);border-radius:9px;color:var(--cr);font-size:15px;padding:11px 13px;width:100%;outline:none;transition:border .15s;}
 .inp:focus{border-color:var(--pri);}
 .inp::placeholder{color:var(--mu);}
+.sel-mesa{background:var(--s2);border:1px solid var(--dim);border-radius:9px;color:var(--cr);font-size:16px;font-weight:800;padding:6px 10px;outline:none;font-family:'Nunito',sans-serif;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237a5c42' viewBox='0 0 16 16'%3e%3cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;transition:border .15s;min-width:150px;}
+.sel-mesa:focus{border-color:var(--pri);}
+.sel-mesa option{background:var(--s1);color:var(--cr);}
 .lbl{font-size:11px;color:var(--mu);font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;display:block;}
 .bdg{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;}
 .bdg-ok{background:#0d2a1a;color:var(--gr);}
@@ -192,908 +233,910 @@ const CSS = `
 .pedit-del{background:var(--dn);border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:800;padding:6px 10px;cursor:pointer;}
 `;
 
-/* ══════════════════════════════════════════
-   APP PRINCIPAL
-══════════════════════════════════════════ */
-function App() {
-  const [screen,   setScreen]   = useState(() => getToken() ? 'loading' : 'login');
-  const [tab,      setTab]      = useState('orders');
-  const [prods,    setProds]    = useState([]);
-  const [ords,     setOrds]     = useState([]);
-  const [lu,       setLu]       = useState('');
-  const [lp,       setLp]       = useState('');
-  const [lerr,     setLerr]     = useState('');
-  const [busy,     setBusy]     = useState(false);
-  const [order,    setOrder]    = useState(null);
-  const [catF,     setCatF]     = useState('Todos');
-  const [payAmt,   setPayAmt]   = useState('');
-  const [payRes,   setPayRes]   = useState(null);
-  const [pForm,    setPForm]    = useState(null);
-  const [repDate,  setRepDate]  = useState(today());
-  const [report,   setReport]   = useState(null);
-  const [toast,    setToast]    = useState('');
-  const [persons,  setPersons]  = useState(['Persona 1']);
-  const [activePerson, setActivePerson] = useState('Persona 1');
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editingPersons, setEditingPersons] = useState(false);
+    /* ══════════════════════════════════════════
+       APP PRINCIPAL
+    ══════════════════════════════════════════ */
+    function App() {
+      const [screen, setScreen] = useState(() => getToken() ? 'loading' : 'login');
+      const [tab, setTab] = useState('orders');
+      const [prods, setProds] = useState([]);
+      const [ords, setOrds] = useState([]);
+      const [lu, setLu] = useState('');
+      const [lp, setLp] = useState('');
+      const [lerr, setLerr] = useState('');
+      const [busy, setBusy] = useState(false);
+      const [order, setOrder] = useState(null);
+      const [catF, setCatF] = useState('Todos');
+      const [payAmt, setPayAmt] = useState('');
+      const [payRes, setPayRes] = useState(null);
+      const [pForm, setPForm] = useState(null);
+      const [repDate, setRepDate] = useState(today());
+      const [report, setReport] = useState(null);
+      const [toast, setToast] = useState('');
+      const [persons, setPersons] = useState(['Persona 1']);
+      const [activePerson, setActivePerson] = useState('Persona 1');
+      const [editingNoteId, setEditingNoteId] = useState(null);
+      const [editingPersons, setEditingPersons] = useState(false);
 
-  const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 2400); };
+      const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 2400); };
 
-  // Auto-cargar si hay token
-  useEffect(() => {
-    if (screen === 'loading') loadData();
-  }, []);
+      // Auto-cargar si hay token
+      useEffect(() => {
+        if (screen === 'loading') loadData();
+      }, []);
 
-  async function loadData() {
-    try {
-      const [p, o] = await Promise.all([API.getProducts(), API.getOrders()]);
-      setProds(p);
-      setOrds(o);
-      setScreen('main');
-    } catch (e) {
-      setToken(null);
-      setScreen('login');
-    }
-  }
-
-  async function doLogin() {
-    if (busy) return;
-    setBusy(true); setLerr('');
-    try {
-      const { token } = await API.login({ username: lu.trim(), password: lp });
-      setToken(token);
-      await loadData();
-    } catch (e) {
-      setLerr(e.message || 'Error al iniciar sesión');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function doLogout() {
-    setToken(null);
-    setScreen('login');
-    setLu(''); setLp(''); setLerr('');
-    setOrds([]); setProds([]);
-  }
-
-  /* ─── Comandas ─── */
-  function newOrd() {
-    const act = ords.filter(x => x.status === 'active').length;
-    const o = { id: null, label: `Mesa ${act + 1}`, items: [], status: 'active', created_at: new Date().toISOString() };
-    setPersons(['Persona 1']);
-    setActivePerson('Persona 1');
-    setEditingPersons(false);
-    setEditingNoteId(null);
-    setOrder(o); setCatF('Todos'); setScreen('order');
-  }
-
-  function openOrd(o) {
-    const items = [...(o.items || [])];
-    // Reconstruir lista de personas desde los items existentes
-    const pNames = [...new Set(items.map(i => i.person_name || '').filter(Boolean))];
-    const pList = pNames.length > 0 ? pNames : ['Persona 1'];
-    // Asignar persona por defecto a items sin persona
-    const fixedItems = items.map(i => ({ ...i, person_name: i.person_name || pList[0], notes: i.notes || '' }));
-    setPersons(pList);
-    setActivePerson(pList[0]);
-    setEditingPersons(false);
-    setEditingNoteId(null);
-    setOrder({ ...o, items: fixedItems });
-    setCatF('Todos');
-    if (o.status === 'active') { setPayRes(null); setScreen('order'); }
-    else { setPayRes({ total: o.total, paid: o.paid, change: o.change_amt }); setScreen('payment'); }
-  }
-
-  function addItem(prod) {
-    setOrder(prev => {
-      const items = [...prev.items];
-      // Buscar item del mismo producto para la misma persona
-      const idx = items.findIndex(i => (i.product_id === prod.id || i.productId === prod.id) && i.person_name === activePerson);
-      if (idx >= 0) items[idx] = { ...items[idx], qty: items[idx].qty + 1 };
-      else items.push({ productId: prod.id, product_id: prod.id, name: prod.name, price: prod.price, qty: 1, person_name: activePerson, notes: '' });
-      return { ...prev, items };
-    });
-  }
-
-  // Usamos un identificador compuesto: product_id + person_name
-  function itemKey(item) {
-    return (item.product_id || item.productId) + '::' + (item.person_name || '');
-  }
-
-  function setQty(ik, qty) {
-    setOrder(prev => ({
-      ...prev,
-      items: qty <= 0
-        ? prev.items.filter(i => itemKey(i) !== ik)
-        : prev.items.map(i => itemKey(i) === ik ? { ...i, qty } : i)
-    }));
-  }
-
-  function setItemNotes(ik, notes) {
-    setOrder(prev => ({
-      ...prev,
-      items: prev.items.map(i => itemKey(i) === ik ? { ...i, notes } : i)
-    }));
-  }
-
-  function addPerson() {
-    const n = persons.length + 1;
-    let name = `Persona ${n}`;
-    while (persons.includes(name)) name = `Persona ${n + Math.floor(Math.random()*100)}`;
-    setPersons(p => [...p, name]);
-    setActivePerson(name);
-  }
-
-  function renamePerson(oldName, newName) {
-    if (!newName.trim() || (newName !== oldName && persons.includes(newName))) return;
-    setPersons(p => p.map(x => x === oldName ? newName : x));
-    setOrder(prev => ({
-      ...prev,
-      items: prev.items.map(i => i.person_name === oldName ? { ...i, person_name: newName } : i)
-    }));
-    if (activePerson === oldName) setActivePerson(newName);
-  }
-
-  function removePerson(name) {
-    if (persons.length <= 1) return;
-    setPersons(p => p.filter(x => x !== name));
-    setOrder(prev => ({
-      ...prev,
-      items: prev.items.filter(i => i.person_name !== name)
-    }));
-    if (activePerson === name) setActivePerson(persons.find(x => x !== name) || persons[0]);
-  }
-
-  async function saveBack() {
-    if (!order) return;
-    setBusy(true);
-    try {
-      const payload = {
-        label: order.label,
-        items: order.items.map(i => ({
-          productId: i.product_id || i.productId,
-          name: i.name, price: i.price, qty: i.qty,
-          person_name: i.person_name || '', notes: i.notes || ''
-        }))
-      };
-      let updated;
-      if (order.id) {
-        updated = await API.updateOrder(order.id, payload);
-        setOrds(o => o.map(x => x.id === updated.id ? updated : x));
-      } else {
-        updated = await API.createOrder(payload);
-        setOrds(o => [updated, ...o]);
+      async function loadData() {
+        try {
+          const [p, o] = await Promise.all([API.getProducts(), API.getOrders()]);
+          setProds(p);
+          setOrds(o);
+          setScreen('main');
+        } catch (e) {
+          setToken(null);
+          setScreen('login');
+        }
       }
-      setScreen('main'); setTab('orders');
-      showToast('Comanda guardada');
-    } catch (e) { showToast('Error: ' + e.message); }
-    finally { setBusy(false); }
-  }
 
-  function goToPay() { setPayAmt(''); setPayRes(null); setScreen('payment'); }
-
-  async function confirmPay() {
-    const total = orderTotal(order);
-    const paid  = parseFloat(payAmt);
-    if (isNaN(paid) || paid < total) return;
-    const res = { total, paid, change: paid - total };
-    setPayRes(res);
-    setBusy(true);
-    try {
-      const payload = {
-        label: order.label, status: 'paid',
-        total, paid, change_amt: res.change,
-        items: order.items.map(i => ({
-          productId: i.product_id || i.productId,
-          name: i.name, price: i.price, qty: i.qty,
-          person_name: i.person_name || '', notes: i.notes || ''
-        }))
-      };
-      let updated;
-      if (order.id) {
-        updated = await API.updateOrder(order.id, payload);
-        setOrds(o => o.map(x => x.id === updated.id ? updated : x));
-      } else {
-        updated = await API.createOrder({ ...payload, status: 'paid' });
-        setOrds(o => [updated, ...o]);
+      async function doLogin() {
+        if (busy) return;
+        setBusy(true); setLerr('');
+        try {
+          const { token } = await API.login({ username: lu.trim(), password: lp });
+          setToken(token);
+          await loadData();
+        } catch (e) {
+          setLerr(e.message || 'Error al iniciar sesión');
+        } finally {
+          setBusy(false);
+        }
       }
-      setOrder(updated);
-    } catch (e) { showToast('Error al guardar: ' + e.message); }
-    finally { setBusy(false); }
-  }
 
-  async function cancelOrd() {
-    if (order?.id) {
-      try {
-        await API.cancelOrder(order.id);
-        setOrds(o => o.map(x => x.id === order.id ? { ...x, status: 'cancelled' } : x));
-      } catch {}
-    }
-    setScreen('main'); setTab('orders');
-  }
-
-  /* ─── Productos ─── */
-  function newProd()  { setPForm({ id: null, name: '', price: '', category: 'Tacos', image: null }); setScreen('pform'); }
-  function editProd(p){ setPForm({ ...p, price: String(p.price) }); setScreen('pform'); }
-
-  async function delProd(id) {
-    if (!window.confirm('¿Eliminar este producto?')) return;
-    try {
-      await API.deleteProduct(id);
-      setProds(p => p.filter(x => x.id !== id));
-      showToast('Producto eliminado');
-    } catch (e) { showToast('Error: ' + e.message); }
-  }
-
-  async function saveProd() {
-    if (!pForm.name?.trim()) return alert('El nombre es obligatorio');
-    setBusy(true);
-    try {
-      const payload = { name: pForm.name.trim(), price: parseFloat(pForm.price) || 0, category: pForm.category, image: pForm.image };
-      if (pForm.id) {
-        const updated = await API.updateProduct(pForm.id, payload);
-        setProds(p => p.map(x => x.id === updated.id ? updated : x));
-      } else {
-        const created = await API.createProduct(payload);
-        setProds(p => [...p, created]);
+      function doLogout() {
+        setToken(null);
+        setScreen('login');
+        setLu(''); setLp(''); setLerr('');
+        setOrds([]); setProds([]);
       }
-      setScreen('main'); setTab('products');
-      showToast(pForm.id ? 'Producto actualizado' : 'Producto creado');
-    } catch (e) { showToast('Error: ' + e.message); }
-    finally { setBusy(false); }
-  }
 
-  function handleImg(e) {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = ev => setPForm(p => ({ ...p, image: ev.target.result }));
-    r.readAsDataURL(f);
-  }
+      /* ─── Comandas ─── */
+      function newOrd() {
+        const o = { id: null, label: 'Mesa 1', items: [], status: 'active', created_at: new Date().toISOString() };
+        setPersons(['Persona 1']);
+        setActivePerson('Persona 1');
+        setEditingPersons(false);
+        setEditingNoteId(null);
+        setOrder(o); setCatF('Todos'); setScreen('order');
+      }
 
-  /* ─── Reporte ─── */
-  async function loadReport(date) {
-    setRepDate(date); setReport(null);
-    try {
-      const data = await API.getReport(date);
-      setReport(data);
-    } catch (e) { showToast('Error al cargar reporte'); }
-  }
+      function openOrd(o) {
+        const items = [...(o.items || [])];
+        // Reconstruir lista de personas desde los items existentes
+        const pNames = [...new Set(items.map(i => i.person_name || '').filter(Boolean))];
+        const pList = pNames.length > 0 ? pNames : ['Persona 1'];
+        // Asignar persona por defecto a items sin persona
+        const fixedItems = items.map(i => ({ ...i, person_name: i.person_name || pList[0], notes: i.notes || '' }));
+        setPersons(pList);
+        setActivePerson(pList[0]);
+        setEditingPersons(false);
+        setEditingNoteId(null);
+        setOrder({ ...o, items: fixedItems });
+        setCatF('Todos');
+        if (o.status === 'active') { setPayRes(null); setScreen('order'); }
+        else { setPayRes({ total: o.total, paid: o.paid, change: o.change_amt }); setScreen('payment'); }
+      }
 
-  useEffect(() => { if (screen === 'main' && tab === 'reports') loadReport(repDate); }, [tab]);
+      function addItem(prod) {
+        setOrder(prev => {
+          const items = [...prev.items];
+          // Buscar item del mismo producto para la misma persona
+          const idx = items.findIndex(i => (i.product_id === prod.id || i.productId === prod.id) && i.person_name === activePerson);
+          if (idx >= 0) items[idx] = { ...items[idx], qty: items[idx].qty + 1 };
+          else items.push({ productId: prod.id, product_id: prod.id, name: prod.name, price: prod.price, qty: 1, person_name: activePerson, notes: '' });
+          return { ...prev, items };
+        });
+      }
 
-  function exportCSV() {
-    if (!report) return;
-    const rows = [['Comanda','Fecha','Persona','Producto','Notas','Cantidad','Precio unitario','Subtotal','Total comanda','Pagó','Cambio']];
-    report.orders.forEach(o => (o.items||[]).forEach(i =>
-      rows.push([o.label, o.paid_at?.slice(0,10), i.person_name||'', i.name, i.notes||'', i.qty, i.price, i.price*i.qty, o.total, o.paid, o.change_amt])
-    ));
-    const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
-    a.download = `corte_${repDate}.csv`;
-    a.click();
-  }
+      // Usamos un identificador compuesto: product_id + person_name
+      function itemKey(item) {
+        return (item.product_id || item.productId) + '::' + (item.person_name || '');
+      }
 
-  /* ── Derived ── */
-  const cats       = ['Todos', ...new Set(prods.map(p => p.category))];
-  const fProds     = catF === 'Todos' ? prods : prods.filter(p => p.category === catF);
-  const activeOrds = ords.filter(o => o.status === 'active');
-  const paidOrds   = ords.filter(o => o.status === 'paid');
-  const catGroups  = [...new Set(prods.map(p => p.category))];
+      function setQty(ik, qty) {
+        setOrder(prev => ({
+          ...prev,
+          items: qty <= 0
+            ? prev.items.filter(i => itemKey(i) !== ik)
+            : prev.items.map(i => itemKey(i) === ik ? { ...i, qty } : i)
+        }));
+      }
 
-  /* ═════════════════════════════════════════════════════════
-     PANTALLAS
-  ═════════════════════════════════════════════════════════ */
+      function setItemNotes(ik, notes) {
+        setOrder(prev => ({
+          ...prev,
+          items: prev.items.map(i => itemKey(i) === ik ? { ...i, notes } : i)
+        }));
+      }
 
-  /* Loading */
-  if (screen === 'loading') return (
-    <>
-    <style>{CSS}</style>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#0f0a07',flexDirection:'column',gap:'16px'}}>
-      <div style={{fontSize:'52px'}}>🌮</div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:'38px',color:'#e85d04',letterSpacing:'3px'}}>TAQUERÍA</div>
-      <div style={{display:'flex',alignItems:'center',gap:'8px',color:'#7a5c42',fontSize:'14px'}}>
-        <span className="spin" style={{borderColor:'rgba(232,93,4,.3)',borderTopColor:'#e85d04'}}/>
-        Conectando...
-      </div>
-    </div>
-    </>
-  );
+      function addPerson() {
+        const n = persons.length + 1;
+        let name = `Persona ${n}`;
+        while (persons.includes(name)) name = `Persona ${n + Math.floor(Math.random() * 100)}`;
+        setPersons(p => [...p, name]);
+        setActivePerson(name);
+      }
 
-  /* Login */
-  if (screen === 'login') return (
-    <>
-    <style>{CSS}</style>
-    <div className="lgbg">
-      <div style={{fontSize:'64px',marginBottom:'8px'}}>🌮</div>
-      <div className="lglogo">TAQUERÍA</div>
-      <div style={{fontSize:'13px',color:'var(--mu)',textAlign:'center',margin:'8px 0 36px',fontWeight:'700',letterSpacing:'1px',textTransform:'uppercase'}}>Sistema de Comandas</div>
-      <div style={{width:'100%',maxWidth:'340px',display:'flex',flexDirection:'column',gap:'13px'}}>
-        <div>
-          <span className="lbl">Usuario</span>
-          <input className="inp" value={lu} onChange={e=>setLu(e.target.value)} placeholder="admin" autoComplete="username"/>
-        </div>
-        <div>
-          <span className="lbl">Contraseña</span>
-          <input className="inp" type="password" value={lp} onChange={e=>setLp(e.target.value)} placeholder="••••"
-            onKeyDown={e=>e.key==='Enter'&&doLogin()} autoComplete="current-password"/>
-        </div>
-        <button className="btn btnP" onClick={doLogin} disabled={busy} style={{marginTop:'4px'}}>
-          {busy && <span className="spin"/>}Entrar
-        </button>
-        {lerr && <div className="err">{lerr}</div>}
-      </div>
-    </div>
-    </>
-  );
+      function renamePerson(oldName, newName) {
+        if (!newName.trim() || (newName !== oldName && persons.includes(newName))) return;
+        setPersons(p => p.map(x => x === oldName ? newName : x));
+        setOrder(prev => ({
+          ...prev,
+          items: prev.items.map(i => i.person_name === oldName ? { ...i, person_name: newName } : i)
+        }));
+        if (activePerson === oldName) setActivePerson(newName);
+      }
 
-  /* Armar comanda */
-  if (screen === 'order') {
-    const total = orderTotal(order);
-    const cnt   = (order?.items||[]).reduce((s,i) => s + i.qty, 0);
-    // Items de la persona activa para highlight en grid
-    const activePersonItems = (order?.items||[]).filter(i => i.person_name === activePerson);
-    // Agrupar items por persona para el pedido actual
-    const groupedByPerson = persons.map(p => ({
-      person: p,
-      items: (order?.items||[]).filter(i => i.person_name === p)
-    })).filter(g => g.items.length > 0);
-    return (
-      <>
-      <style>{CSS}</style>
-      <div className="app">
-        <div className="hdr">
-          <div>
-            <input value={order.label} onChange={e=>setOrder(o=>({...o,label:e.target.value}))}
-              style={{background:'transparent',border:'none',padding:0,fontSize:'18px',fontWeight:'800',color:'var(--cr)',fontFamily:"'Nunito',sans-serif",width:'170px',outline:'none'}}
-              placeholder="Nombre / Mesa"/>
-            <div className="hdr-sub">{cnt} producto{cnt!==1?'s':''} · {fmt(total)} · {persons.length} persona{persons.length!==1?'s':''}</div>
-          </div>
-          <div style={{display:'flex',gap:'7px'}}>
-            <button className="ico" onClick={saveBack} disabled={busy}>💾</button>
-            <button className="ico" onClick={cancelOrd} style={{color:'var(--dn)'}}>✕</button>
-          </div>
-        </div>
+      function removePerson(name) {
+        if (persons.length <= 1) return;
+        setPersons(p => p.filter(x => x !== name));
+        setOrder(prev => ({
+          ...prev,
+          items: prev.items.filter(i => i.person_name !== name)
+        }));
+        if (activePerson === name) setActivePerson(persons.find(x => x !== name) || persons[0]);
+      }
 
-        <div className="scrl" style={{paddingBottom:'90px'}}>
-          {/* Tabs de personas */}
-          <div className="lbl" style={{marginTop:'4px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <span>👤 Personas en la mesa</span>
-            <button onClick={()=>setEditingPersons(e=>!e)}
-              style={{background:'none',border:'none',cursor:'pointer',color:editingPersons?'var(--pri)':'var(--mu)',fontSize:'11px',fontWeight:'800'}}>✏ {editingPersons?'Listo':'Editar'}</button>
-          </div>
-          <div className="ppills">
-            {persons.map(p => (
-              <button key={p} className={`ppill ${activePerson===p?'on':''}`} onClick={()=>setActivePerson(p)}>
-                {p}
-                {(order?.items||[]).filter(i=>i.person_name===p).length > 0 && (
-                  <span style={{marginLeft:'5px',fontSize:'10px',opacity:.7}}>({(order?.items||[]).filter(i=>i.person_name===p).reduce((s,i)=>s+i.qty,0)})</span>
-                )}
-              </button>
-            ))}
-            <button className="ppill-add" onClick={addPerson} title="Agregar persona">+</button>
-          </div>
+      async function saveBack() {
+        if (!order) return;
+        setBusy(true);
+        try {
+          const payload = {
+            label: order.label,
+            items: order.items.map(i => ({
+              productId: i.product_id || i.productId,
+              name: i.name, price: i.price, qty: i.qty,
+              person_name: i.person_name || '', notes: i.notes || ''
+            }))
+          };
+          let updated;
+          if (order.id) {
+            updated = await API.updateOrder(order.id, payload);
+            setOrds(o => o.map(x => x.id === updated.id ? updated : x));
+          } else {
+            updated = await API.createOrder(payload);
+            setOrds(o => [updated, ...o]);
+          }
+          setScreen('main'); setTab('orders');
+          showToast('Comanda guardada');
+        } catch (e) { showToast('Error: ' + e.message); }
+        finally { setBusy(false); }
+      }
 
-          {/* Editar nombres de personas */}
-          {editingPersons && (
-            <div className="card fu" style={{marginTop:'6px',marginBottom:'8px'}}>
-              <div className="lbl">Editar personas</div>
-              {persons.map(p => (
-                <div key={p} className="pedit-row">
-                  <input className="pedit-inp" value={p}
-                    onChange={e => renamePerson(p, e.target.value)}
-                    placeholder="Nombre"/>
-                  {persons.length > 1 && (
-                    <button className="pedit-del" onClick={()=>removePerson(p)}>✕</button>
-                  )}
-                </div>
-              ))}
+      function goToPay() { setPayAmt(''); setPayRes(null); setScreen('payment'); }
+
+      async function confirmPay() {
+        const total = orderTotal(order);
+        const paid = parseFloat(payAmt);
+        if (isNaN(paid) || paid < total) return;
+        const res = { total, paid, change: paid - total };
+        setPayRes(res);
+        setBusy(true);
+        try {
+          const payload = {
+            label: order.label, status: 'paid',
+            total, paid, change_amt: res.change,
+            items: order.items.map(i => ({
+              productId: i.product_id || i.productId,
+              name: i.name, price: i.price, qty: i.qty,
+              person_name: i.person_name || '', notes: i.notes || ''
+            }))
+          };
+          let updated;
+          if (order.id) {
+            updated = await API.updateOrder(order.id, payload);
+            setOrds(o => o.map(x => x.id === updated.id ? updated : x));
+          } else {
+            updated = await API.createOrder({ ...payload, status: 'paid' });
+            setOrds(o => [updated, ...o]);
+          }
+          setOrder(updated);
+        } catch (e) { showToast('Error al guardar: ' + e.message); }
+        finally { setBusy(false); }
+      }
+
+      async function cancelOrd() {
+        if (order?.id) {
+          try {
+            await API.cancelOrder(order.id);
+            setOrds(o => o.map(x => x.id === order.id ? { ...x, status: 'cancelled' } : x));
+          } catch { }
+        }
+        setScreen('main'); setTab('orders');
+      }
+
+      /* ─── Productos ─── */
+      function newProd() { setPForm({ id: null, name: '', price: '', category: 'Tacos', image: null }); setScreen('pform'); }
+      function editProd(p) { setPForm({ ...p, price: String(p.price) }); setScreen('pform'); }
+
+      async function delProd(id) {
+        if (!window.confirm('¿Eliminar este producto?')) return;
+        try {
+          await API.deleteProduct(id);
+          setProds(p => p.filter(x => x.id !== id));
+          showToast('Producto eliminado');
+        } catch (e) { showToast('Error: ' + e.message); }
+      }
+
+      async function saveProd() {
+        if (!pForm.name?.trim()) return alert('El nombre es obligatorio');
+        setBusy(true);
+        try {
+          const payload = { name: pForm.name.trim(), price: parseFloat(pForm.price) || 0, category: pForm.category, image: pForm.image };
+          if (pForm.id) {
+            const updated = await API.updateProduct(pForm.id, payload);
+            setProds(p => p.map(x => x.id === updated.id ? updated : x));
+          } else {
+            const created = await API.createProduct(payload);
+            setProds(p => [...p, created]);
+          }
+          setScreen('main'); setTab('products');
+          showToast(pForm.id ? 'Producto actualizado' : 'Producto creado');
+        } catch (e) { showToast('Error: ' + e.message); }
+        finally { setBusy(false); }
+      }
+
+      function handleImg(e) {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => setPForm(p => ({ ...p, image: ev.target.result }));
+        r.readAsDataURL(f);
+      }
+
+      /* ─── Reporte ─── */
+      async function loadReport(date) {
+        setRepDate(date); setReport(null);
+        try {
+          const data = await API.getReport(date);
+          setReport(data);
+        } catch (e) { showToast('Error al cargar reporte'); }
+      }
+
+      useEffect(() => { if (screen === 'main' && tab === 'reports') loadReport(repDate); }, [tab]);
+
+      function exportCSV() {
+        if (!report) return;
+        const rows = [['Comanda', 'Fecha', 'Persona', 'Producto', 'Notas', 'Cantidad', 'Precio unitario', 'Subtotal', 'Total comanda', 'Pagó', 'Cambio']];
+        report.orders.forEach(o => (o.items || []).forEach(i =>
+          rows.push([o.label, o.paid_at?.slice(0, 10), i.person_name || '', i.name, i.notes || '', i.qty, i.price, i.price * i.qty, o.total, o.paid, o.change_amt])
+        ));
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.join(',')).join('\n'));
+        a.download = `corte_${repDate}.csv`;
+        a.click();
+      }
+
+      /* ── Derived ── */
+      const cats = ['Todos', ...new Set(prods.map(p => p.category))];
+      const fProds = catF === 'Todos' ? prods : prods.filter(p => p.category === catF);
+      const activeOrds = ords.filter(o => o.status === 'active');
+      const paidOrds = ords.filter(o => o.status === 'paid');
+      const catGroups = [...new Set(prods.map(p => p.category))];
+
+      /* ═════════════════════════════════════════════════════════
+         PANTALLAS
+      ═════════════════════════════════════════════════════════ */
+
+      /* Loading */
+      if (screen === 'loading') return (
+        <>
+          <style>{CSS}</style>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0f0a07', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ fontSize: '52px' }}>🌮</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '38px', color: '#e85d04', letterSpacing: '3px' }}>TAQUERÍA</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7a5c42', fontSize: '14px' }}>
+              <span className="spin" style={{ borderColor: 'rgba(232,93,4,.3)', borderTopColor: '#e85d04' }} />
+              Conectando...
             </div>
-          )}
+          </div>
+        </>
+      );
 
-          {/* Pedido actual agrupado por persona */}
-          {order.items.length > 0 && (
-            <div className="card fu">
-              <div className="lbl">Pedido actual</div>
-              {groupedByPerson.map(({ person, items }) => (
-                <div key={person}>
-                  {persons.length > 1 && (
-                    <div className="pgrp-hdr">
-                      <span className="pgrp-name">👤 {person}</span>
-                      <div className="pgrp-line"/>
-                      <span style={{fontSize:'11px',color:'var(--mu)',fontWeight:'700'}}>{fmt(items.reduce((s,i)=>s+i.price*i.qty,0))}</span>
-                    </div>
-                  )}
-                  {items.map(item => {
-                    const ik = itemKey(item);
-                    return (
-                      <div key={ik}>
-                        <div className="irow" style={{borderBottom: editingNoteId===ik ? 'none' : undefined}}>
-                          <div style={{flex:1}}>
-                            <div style={{fontSize:'14px',fontWeight:'700'}}>{item.name}</div>
-                            <div style={{fontSize:'11px',color:'var(--mu)'}}>{fmt(item.price)} c/u · {fmt(item.price*item.qty)}</div>
-                            {item.notes && editingNoteId !== ik && <div className="note-txt">📝 {item.notes}</div>}
-                          </div>
-                          <button className={`note-btn ${item.notes?'has':''}`}
-                            onClick={()=>setEditingNoteId(editingNoteId===ik?null:ik)} title="Notas">📝</button>
-                          <button className="ico" onClick={()=>setQty(ik,item.qty-1)} style={{width:'30px',height:'30px',fontSize:'16px',background:'var(--s3)'}}>−</button>
-                          <span style={{fontSize:'16px',fontWeight:'800',minWidth:'22px',textAlign:'center'}}>{item.qty}</span>
-                          <button className="ico" onClick={()=>setQty(ik,item.qty+1)} style={{width:'30px',height:'30px',fontSize:'16px',background:'var(--pri)'}}>+</button>
-                        </div>
-                        {editingNoteId === ik && (
-                          <div style={{padding:'0 0 8px'}}>
-                            <input className="note-inp" value={item.notes||''}
-                              onChange={e=>setItemNotes(ik, e.target.value)}
-                              placeholder="Ej: sin cebolla, extra limón..."
-                              autoFocus
-                              onKeyDown={e=>e.key==='Enter'&&setEditingNoteId(null)}/>
+      /* Login */
+      if (screen === 'login') return (
+        <>
+          <style>{CSS}</style>
+          <div className="lgbg">
+            <div style={{ fontSize: '64px', marginBottom: '8px' }}>🌮</div>
+            <div className="lglogo">TAQUERÍA</div>
+            <div style={{ fontSize: '13px', color: 'var(--mu)', textAlign: 'center', margin: '8px 0 36px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>Sistema de Comandas</div>
+            <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '13px' }}>
+              <div>
+                <span className="lbl">Usuario</span>
+                <input className="inp" value={lu} onChange={e => setLu(e.target.value)} placeholder="admin" autoComplete="username" />
+              </div>
+              <div>
+                <span className="lbl">Contraseña</span>
+                <input className="inp" type="password" value={lp} onChange={e => setLp(e.target.value)} placeholder="••••"
+                  onKeyDown={e => e.key === 'Enter' && doLogin()} autoComplete="current-password" />
+              </div>
+              <button className="btn btnP" onClick={doLogin} disabled={busy} style={{ marginTop: '4px' }}>
+                {busy && <span className="spin" />}Entrar
+              </button>
+              {lerr && <div className="err">{lerr}</div>}
+            </div>
+          </div>
+        </>
+      );
+
+      /* Armar comanda */
+      if (screen === 'order') {
+        const total = orderTotal(order);
+        const cnt = (order?.items || []).reduce((s, i) => s + i.qty, 0);
+        // Items de la persona activa para highlight en grid
+        const activePersonItems = (order?.items || []).filter(i => i.person_name === activePerson);
+        // Agrupar items por persona para el pedido actual
+        const groupedByPerson = persons.map(p => ({
+          person: p,
+          items: (order?.items || []).filter(i => i.person_name === p)
+        })).filter(g => g.items.length > 0);
+        return (
+          <>
+            <style>{CSS}</style>
+            <div className="app">
+              <div className="hdr">
+                <div>
+                  <select className="sel-mesa" value={order.label} onChange={e => setOrder(o => ({ ...o, label: e.target.value }))}>
+                    {[...Array(10)].map((_, i) => <option key={i + 1} value={`Mesa ${i + 1}`}>Mesa {i + 1}</option>)}
+                    <option value="A domicilio">🛵 A domicilio</option>
+                    <option value="Para recoger">📦 Para recoger</option>
+                  </select>
+                  <div className="hdr-sub">{cnt} producto{cnt !== 1 ? 's' : ''} · {fmt(total)} · {persons.length} persona{persons.length !== 1 ? 's' : ''}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '7px' }}>
+                  <button className="ico" onClick={saveBack} disabled={busy}>💾</button>
+                  <button className="ico" onClick={cancelOrd} style={{ color: 'var(--dn)' }}>✕</button>
+                </div>
+              </div>
+
+              <div className="scrl" style={{ paddingBottom: '90px' }}>
+                {/* Tabs de personas */}
+                <div className="lbl" style={{ marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>👤 Personas en la mesa</span>
+                  <button onClick={() => setEditingPersons(e => !e)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: editingPersons ? 'var(--pri)' : 'var(--mu)', fontSize: '11px', fontWeight: '800' }}>✏ {editingPersons ? 'Listo' : 'Editar'}</button>
+                </div>
+                <div className="ppills">
+                  {persons.map(p => (
+                    <button key={p} className={`ppill ${activePerson === p ? 'on' : ''}`} onClick={() => setActivePerson(p)}>
+                      {p}
+                      {(order?.items || []).filter(i => i.person_name === p).length > 0 && (
+                        <span style={{ marginLeft: '5px', fontSize: '10px', opacity: .7 }}>({(order?.items || []).filter(i => i.person_name === p).reduce((s, i) => s + i.qty, 0)})</span>
+                      )}
+                    </button>
+                  ))}
+                  <button className="ppill-add" onClick={addPerson} title="Agregar persona">+</button>
+                </div>
+
+                {/* Editar nombres de personas */}
+                {editingPersons && (
+                  <div className="card fu" style={{ marginTop: '6px', marginBottom: '8px' }}>
+                    <div className="lbl">Editar personas</div>
+                    {persons.map(p => (
+                      <div key={p} className="pedit-row">
+                        <input className="pedit-inp" value={p}
+                          onChange={e => renamePerson(p, e.target.value)}
+                          placeholder="Nombre" />
+                        {persons.length > 1 && (
+                          <button className="pedit-del" onClick={() => removePerson(p)}>✕</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pedido actual agrupado por persona */}
+                {order.items.length > 0 && (
+                  <div className="card fu">
+                    <div className="lbl">Pedido actual</div>
+                    {groupedByPerson.map(({ person, items }) => (
+                      <div key={person}>
+                        {persons.length > 1 && (
+                          <div className="pgrp-hdr">
+                            <span className="pgrp-name">👤 {person}</span>
+                            <div className="pgrp-line" />
+                            <span style={{ fontSize: '11px', color: 'var(--mu)', fontWeight: '700' }}>{fmt(items.reduce((s, i) => s + i.price * i.qty, 0))}</span>
                           </div>
                         )}
+                        {items.map(item => {
+                          const ik = itemKey(item);
+                          return (
+                            <div key={ik}>
+                              <div className="irow" style={{ borderBottom: editingNoteId === ik ? 'none' : undefined }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: '14px', fontWeight: '700' }}>{item.name}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fmt(item.price)} c/u · {fmt(item.price * item.qty)}</div>
+                                  {item.notes && editingNoteId !== ik && <div className="note-txt">📝 {item.notes}</div>}
+                                </div>
+                                <button className={`note-btn ${item.notes ? 'has' : ''}`}
+                                  onClick={() => setEditingNoteId(editingNoteId === ik ? null : ik)} title="Notas">📝</button>
+                                <button className="ico" onClick={() => setQty(ik, item.qty - 1)} style={{ width: '30px', height: '30px', fontSize: '16px', background: 'var(--s3)' }}>−</button>
+                                <span style={{ fontSize: '16px', fontWeight: '800', minWidth: '22px', textAlign: 'center' }}>{item.qty}</span>
+                                <button className="ico" onClick={() => setQty(ik, item.qty + 1)} style={{ width: '30px', height: '30px', fontSize: '16px', background: 'var(--pri)' }}>+</button>
+                              </div>
+                              {editingNoteId === ik && (
+                                <div style={{ padding: '0 0 8px' }}>
+                                  <input className="note-inp" value={item.notes || ''}
+                                    onChange={e => setItemNotes(ik, e.target.value)}
+                                    placeholder="Ej: sin cebolla, extra limón..."
+                                    autoFocus
+                                    onKeyDown={e => e.key === 'Enter' && setEditingNoteId(null)} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 2px', borderTop: '1px solid var(--bd)', marginTop: '4px' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--mu)', fontWeight: '700' }}>Total</span>
+                      <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '22px', color: 'var(--pri)' }}>{fmt(total)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="dvl" style={{ marginTop: '6px' }}>Agregar productos {persons.length > 1 && <span style={{ color: 'var(--pri)' }}>para {activePerson}</span>}</div>
+                <div className="cpills">
+                  {cats.map(c => <button key={c} className={`cpill ${catF === c ? 'on' : ''}`} onClick={() => setCatF(c)}>{c}</button>)}
+                </div>
+                <div className="pgrd">
+                  {fProds.map(prod => {
+                    const inOrd = activePersonItems.find(i => (i.product_id || i.productId) === prod.id);
+                    const inAny = order.items.find(i => (i.product_id || i.productId) === prod.id);
+                    return (
+                      <div key={prod.id} className={`pc ${inOrd ? 'sel' : ''}`} onClick={() => addItem(prod)}>
+                        {prod.image ? <img src={prod.image} className="pimg" alt={prod.name} /> : <div className="piph">🌮</div>}
+                        <div className="pinfo">
+                          <div className="pname">{prod.name}</div>
+                          <div className="pprc">{fmt(prod.price)}</div>
+                          {inOrd && <div style={{ fontSize: '10px', color: 'var(--amb)', fontWeight: '800', marginTop: '2px' }}>✓ {inOrd.qty} para {activePerson}</div>}
+                          {!inOrd && inAny && <div style={{ fontSize: '10px', color: 'var(--mu)', fontWeight: '700', marginTop: '2px' }}>en otro pedido</div>}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              ))}
-              <div style={{display:'flex',justifyContent:'space-between',padding:'10px 0 2px',borderTop:'1px solid var(--bd)',marginTop:'4px'}}>
-                <span style={{fontSize:'13px',color:'var(--mu)',fontWeight:'700'}}>Total</span>
-                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:'22px',color:'var(--pri)'}}>{fmt(total)}</span>
+              </div>
+
+              <div style={{ background: 'var(--s1)', borderTop: '1px solid var(--bd)', padding: '11px 14px', display: 'flex', gap: '9px' }}>
+                <button className="btn btnS" onClick={saveBack} style={{ flex: 1 }} disabled={busy}>
+                  {busy ? <><span className="spin" />Guardando</> : 'Guardar'}
+                </button>
+                <button className="btn btnP" onClick={goToPay} disabled={!order.items.length || busy}
+                  style={{ flex: 2, opacity: order.items.length ? 1 : .4 }}>
+                  Cobrar · {fmt(total)}
+                </button>
               </div>
             </div>
-          )}
+          </>
+        );
+      }
 
-          <div className="dvl" style={{marginTop:'6px'}}>Agregar productos {persons.length > 1 && <span style={{color:'var(--pri)'}}>para {activePerson}</span>}</div>
-          <div className="cpills">
-            {cats.map(c => <button key={c} className={`cpill ${catF===c?'on':''}`} onClick={()=>setCatF(c)}>{c}</button>)}
+      /* Cobrar */
+      if (screen === 'payment') {
+        const total = orderTotal(order);
+        const paid = parseFloat(payAmt) || 0;
+        const change = paid - total;
+        const valid = paid >= total && paid > 0;
+        const quickAmts = [...new Set([
+          Math.ceil(total / 10) * 10, Math.ceil(total / 50) * 50,
+          Math.ceil(total / 100) * 100, Math.ceil(total / 200) * 200
+        ])].filter(v => v >= total).slice(0, 4);
+        const app2 = n => {
+          if (n === '.' && payAmt.includes('.')) return;
+          if (payAmt.includes('.') && payAmt.split('.')[1]?.length >= 2) return;
+          setPayAmt(p => (p === '' || p === '0') && n !== '.' ? n : p + n);
+        };
+        return (
+          <>
+            <style>{CSS}</style>
+            <div className="app">
+              <div className="hdr">
+                <div>
+                  <div className="hdr-title">{payRes ? 'Cobrada' : 'Cobrar'}</div>
+                  <div className="hdr-sub">{order?.label}</div>
+                </div>
+                {!payRes && <button className="ico" onClick={() => setScreen('order')}>←</button>}
+              </div>
+              <div className="scrl">
+                {payRes ? (
+                  <div className="fu">
+                    <div className="sbanner">
+                      <div className="sico">✓</div>
+                      <div className="stit">¡Pagado!</div>
+                      <div style={{ fontSize: '13px', color: '#a8d5b5', marginTop: '3px' }}>{order?.label}</div>
+                    </div>
+                    <div className="card">
+                      <div className="prow"><span className="prlbl">Total consumido</span><span className="prval">{fmt(payRes.total)}</span></div>
+                      <div className="prow"><span className="prlbl">Pagó con</span><span className="prval">{fmt(payRes.paid)}</span></div>
+                      <div className="prow"><span className="prlbl">Feria / Cambio</span><span className="prval ch">{fmt(payRes.change)}</span></div>
+                    </div>
+                    <div className="dvl">Detalle del pedido</div>
+                    {(() => {
+                      const payPersons = [...new Set((order?.items || []).map(i => i.person_name || '').filter(Boolean))];
+                      const showPersons = payPersons.length > 1;
+                      return showPersons ? payPersons.map(p => (
+                        <div key={p}>
+                          <div className="pgrp-hdr"><span className="pgrp-name">👤 {p}</span><div className="pgrp-line" /></div>
+                          {(order?.items || []).filter(i => i.person_name === p).map(i => (
+                            <div key={(i.product_id || i.productId) + '::' + p} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bd)', fontSize: '13px' }}>
+                              <div>
+                                <span style={{ color: 'var(--cr)' }}>{i.qty}x {i.name}</span>
+                                {i.notes && <div className="note-txt">📝 {i.notes}</div>}
+                              </div>
+                              <span style={{ color: 'var(--mu)', fontWeight: '700' }}>{fmt(i.price * i.qty)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )) : (order?.items || []).map(i => (
+                        <div key={i.product_id || i.productId} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bd)', fontSize: '13px' }}>
+                          <div>
+                            <span style={{ color: 'var(--cr)' }}>{i.qty}x {i.name}</span>
+                            {i.notes && <div className="note-txt">📝 {i.notes}</div>}
+                          </div>
+                          <span style={{ color: 'var(--mu)', fontWeight: '700' }}>{fmt(i.price * i.qty)}</span>
+                        </div>
+                      ));
+                    })()}
+                    <div style={{ height: '18px' }} />
+                    <button className="btn btnP" onClick={() => { setScreen('main'); setTab('orders'); }}>Nueva comanda</button>
+                  </div>
+                ) : (
+                  <div className="fu">
+                    <div className="tbanner">
+                      <div className="tlbl">Total a cobrar</div>
+                      <div className="tamt">{fmt(total)}</div>
+                    </div>
+                    <div className="pdis">
+                      <div className="pdislbl">Paga con</div>
+                      <div className="pdisval">{payAmt ? fmt(parseFloat(payAmt) || 0) : '$0.00'}</div>
+                      {valid && <div style={{ fontSize: '13px', color: 'var(--gr)', fontWeight: '800', marginTop: '3px' }}>Feria: {fmt(change)}</div>}
+                    </div>
+                    {quickAmts.length > 0 && (
+                      <>
+                        <div className="lbl">Monto rápido</div>
+                        <div className="qpay">
+                          {quickAmts.map(a => <button key={a} className="qpbtn" onClick={() => setPayAmt(String(a))}>{fmt(a)}</button>)}
+                        </div>
+                      </>
+                    )}
+                    <div className="npad">
+                      {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(n =>
+                        <button key={n} className="npb" onClick={() => app2(n)}>{n}</button>
+                      )}
+                      <button className="npb z2" onClick={() => app2('0')}>0</button>
+                      <button className="npb dl" onClick={() => setPayAmt(p => p.slice(0, -1))}>⌫</button>
+                    </div>
+                    <button className="btn btnOk" onClick={confirmPay} disabled={!valid || busy} style={{ opacity: valid ? 1 : .4 }}>
+                      {busy ? <><span className="spin" />Guardando...</> : valid ? `Confirmar · Feria ${fmt(change)}` : 'Ingresa el monto pagado'}
+                    </button>
+                    <div style={{ height: '10px' }} />
+                    <div className="dvl">Resumen de la comanda</div>
+                    {(() => {
+                      const payPersons = [...new Set((order?.items || []).map(i => i.person_name || '').filter(Boolean))];
+                      const showPersons = payPersons.length > 1;
+                      return showPersons ? payPersons.map(p => (
+                        <div key={p}>
+                          <div className="pgrp-hdr"><span className="pgrp-name">👤 {p}</span><div className="pgrp-line" /></div>
+                          {(order?.items || []).filter(i => i.person_name === p).map(i => (
+                            <div key={(i.product_id || i.productId) + '::' + p} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--bd)', fontSize: '13px' }}>
+                              <div>
+                                <span style={{ color: 'var(--cr)' }}>{i.qty}x {i.name}</span>
+                                {i.notes && <div className="note-txt">📝 {i.notes}</div>}
+                              </div>
+                              <span style={{ color: 'var(--mu)', fontWeight: '700' }}>{fmt(i.price * i.qty)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )) : (order?.items || []).map(i => (
+                        <div key={i.product_id || i.productId} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--bd)', fontSize: '13px' }}>
+                          <div>
+                            <span style={{ color: 'var(--cr)' }}>{i.qty}x {i.name}</span>
+                            {i.notes && <div className="note-txt">📝 {i.notes}</div>}
+                          </div>
+                          <span style={{ color: 'var(--mu)', fontWeight: '700' }}>{fmt(i.price * i.qty)}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      /* Formulario de producto */
+      if (screen === 'pform') return (
+        <>
+          <style>{CSS}</style>
+          <div className="app">
+            <div className="hdr">
+              <div><div className="hdr-title">{pForm?.id ? 'Editar' : 'Nuevo'} Producto</div></div>
+              <button className="ico" onClick={() => { setScreen('main'); setTab('products'); }}>✕</button>
+            </div>
+            <div className="scrl">
+              <span className="lbl">Imagen del producto</span>
+              {pForm?.image ? (
+                <div style={{ position: 'relative', marginBottom: '10px' }}>
+                  <img src={pForm.image} style={{ width: '100%', height: '160px', borderRadius: '10px', objectFit: 'cover' }} alt="" />
+                  <button onClick={() => setPForm(f => ({ ...f, image: null }))}
+                    style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,.78)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>✕</button>
+                  <label style={{ display: 'block', textAlign: 'center', marginTop: '7px', cursor: 'pointer' }}>
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImg} />
+                    <span style={{ fontSize: '12px', color: 'var(--pri)', fontWeight: '800' }}>Cambiar imagen</span>
+                  </label>
+                </div>
+              ) : (
+                <label className="imgph">
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImg} />
+                  <span style={{ fontSize: '36px' }}>📷</span>
+                  <span style={{ fontSize: '13px', color: 'var(--mu)', fontWeight: '700' }}>Toca para agregar foto</span>
+                  <span style={{ fontSize: '11px', color: 'var(--dim)' }}>Cámara o galería</span>
+                </label>
+              )}
+              <div style={{ height: '12px' }} />
+              <span className="lbl">Nombre del producto</span>
+              <input className="inp" value={pForm?.name || ''} onChange={e => setPForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Taco de Asada" />
+              <div style={{ height: '13px' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '11px' }}>
+                <div>
+                  <span className="lbl">Precio ($)</span>
+                  <input className="inp" type="number" inputMode="decimal" value={pForm?.price || ''} onChange={e => setPForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" />
+                </div>
+                <div>
+                  <span className="lbl">Categoría</span>
+                  <input className="inp" value={pForm?.category || ''} onChange={e => setPForm(f => ({ ...f, category: e.target.value }))} placeholder="Tacos" list="cats-dl" />
+                  <datalist id="cats-dl">{catGroups.map(c => <option key={c} value={c} />)}</datalist>
+                </div>
+              </div>
+              <div style={{ height: '24px' }} />
+              <button className="btn btnP" onClick={saveProd} disabled={busy}>
+                {busy ? <><span className="spin" />Guardando...</> : pForm?.id ? 'Guardar cambios' : 'Agregar producto'}
+              </button>
+              {pForm?.id && (
+                <>
+                  <div style={{ height: '10px' }} />
+                  <button className="btn btnDn" onClick={() => { delProd(pForm.id); setScreen('main'); setTab('products'); }}>
+                    Eliminar producto
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <div className="pgrd">
-            {fProds.map(prod => {
-              const inOrd = activePersonItems.find(i => (i.product_id||i.productId) === prod.id);
-              const inAny = order.items.find(i => (i.product_id||i.productId) === prod.id);
+        </>
+      );
+
+      /* ─────────────────────────────────────────────
+         MAIN TABS
+      ───────────────────────────────────────────── */
+      const TabOrders = (
+        <>
+          <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '22px', color: 'var(--cr)' }}>Comandas</div>
+              <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{activeOrds.length} activa{activeOrds.length !== 1 ? 's' : ''}</div>
+            </div>
+            <button className="btn btnP" onClick={newOrd} style={{ width: 'auto', padding: '11px 18px', fontSize: '14px' }}>+ Nueva</button>
+          </div>
+          <div className="scrl" style={{ paddingTop: '10px' }}>
+            {activeOrds.length === 0 ? (
+              <div className="empty">
+                <div className="emico">🌮</div>
+                <div className="emtit">Sin comandas activas</div>
+                <div style={{ fontSize: '13px' }}>Toca "+ Nueva" para empezar</div>
+              </div>
+            ) : activeOrds.map(o => {
+              const t = orderTotal(o);
               return (
-                <div key={prod.id} className={`pc ${inOrd?'sel':''}`} onClick={()=>addItem(prod)}>
-                  {prod.image ? <img src={prod.image} className="pimg" alt={prod.name}/> : <div className="piph">🌮</div>}
-                  <div className="pinfo">
-                    <div className="pname">{prod.name}</div>
-                    <div className="pprc">{fmt(prod.price)}</div>
-                    {inOrd && <div style={{fontSize:'10px',color:'var(--amb)',fontWeight:'800',marginTop:'2px'}}>✓ {inOrd.qty} para {activePerson}</div>}
-                    {!inOrd && inAny && <div style={{fontSize:'10px',color:'var(--mu)',fontWeight:'700',marginTop:'2px'}}>en otro pedido</div>}
+                <div key={o.id} className="ocard fu" onClick={() => openOrd(o)}>
+                  <div style={{ width: '42px', height: '42px', background: 'var(--pri)', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>🌮</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="olbl">{o.label}</div>
+                    <div className="omt">{(o.items || []).length} productos · {fmtTime(o.created_at)}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="otot">{fmt(t)}</div>
+                    <span className="bdg bdg-ok">Activa</span>
                   </div>
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        <div style={{background:'var(--s1)',borderTop:'1px solid var(--bd)',padding:'11px 14px',display:'flex',gap:'9px'}}>
-          <button className="btn btnS" onClick={saveBack} style={{flex:1}} disabled={busy}>
-            {busy ? <><span className="spin"/>Guardando</> : 'Guardar'}
-          </button>
-          <button className="btn btnP" onClick={goToPay} disabled={!order.items.length||busy}
-            style={{flex:2,opacity:order.items.length?1:.4}}>
-            Cobrar · {fmt(total)}
-          </button>
-        </div>
-      </div>
-      </>
-    );
-  }
-
-  /* Cobrar */
-  if (screen === 'payment') {
-    const total = orderTotal(order);
-    const paid  = parseFloat(payAmt) || 0;
-    const change = paid - total;
-    const valid = paid >= total && paid > 0;
-    const quickAmts = [...new Set([
-      Math.ceil(total/10)*10, Math.ceil(total/50)*50,
-      Math.ceil(total/100)*100, Math.ceil(total/200)*200
-    ])].filter(v => v >= total).slice(0,4);
-    const app2 = n => {
-      if (n==='.' && payAmt.includes('.')) return;
-      if (payAmt.includes('.') && payAmt.split('.')[1]?.length >= 2) return;
-      setPayAmt(p => (p===''||p==='0') && n!=='.' ? n : p+n);
-    };
-    return (
-      <>
-      <style>{CSS}</style>
-      <div className="app">
-        <div className="hdr">
-          <div>
-            <div className="hdr-title">{payRes ? 'Cobrada' : 'Cobrar'}</div>
-            <div className="hdr-sub">{order?.label}</div>
-          </div>
-          {!payRes && <button className="ico" onClick={()=>setScreen('order')}>←</button>}
-        </div>
-        <div className="scrl">
-          {payRes ? (
-            <div className="fu">
-              <div className="sbanner">
-                <div className="sico">✓</div>
-                <div className="stit">¡Pagado!</div>
-                <div style={{fontSize:'13px',color:'#a8d5b5',marginTop:'3px'}}>{order?.label}</div>
-              </div>
-              <div className="card">
-                <div className="prow"><span className="prlbl">Total consumido</span><span className="prval">{fmt(payRes.total)}</span></div>
-                <div className="prow"><span className="prlbl">Pagó con</span><span className="prval">{fmt(payRes.paid)}</span></div>
-                <div className="prow"><span className="prlbl">Feria / Cambio</span><span className="prval ch">{fmt(payRes.change)}</span></div>
-              </div>
-              <div className="dvl">Detalle del pedido</div>
-              {(() => {
-                const payPersons = [...new Set((order?.items||[]).map(i=>i.person_name||'').filter(Boolean))];
-                const showPersons = payPersons.length > 1;
-                return showPersons ? payPersons.map(p => (
-                  <div key={p}>
-                    <div className="pgrp-hdr"><span className="pgrp-name">👤 {p}</span><div className="pgrp-line"/></div>
-                    {(order?.items||[]).filter(i=>i.person_name===p).map(i => (
-                      <div key={(i.product_id||i.productId)+'::'+p} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bd)',fontSize:'13px'}}>
-                        <div>
-                          <span style={{color:'var(--cr)'}}>{i.qty}x {i.name}</span>
-                          {i.notes && <div className="note-txt">📝 {i.notes}</div>}
-                        </div>
-                        <span style={{color:'var(--mu)',fontWeight:'700'}}>{fmt(i.price*i.qty)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )) : (order?.items||[]).map(i => (
-                  <div key={i.product_id||i.productId} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bd)',fontSize:'13px'}}>
-                    <div>
-                      <span style={{color:'var(--cr)'}}>{i.qty}x {i.name}</span>
-                      {i.notes && <div className="note-txt">📝 {i.notes}</div>}
-                    </div>
-                    <span style={{color:'var(--mu)',fontWeight:'700'}}>{fmt(i.price*i.qty)}</span>
-                  </div>
-                ));
-              })()}
-              <div style={{height:'18px'}}/>
-              <button className="btn btnP" onClick={()=>{setScreen('main');setTab('orders');}}>Nueva comanda</button>
-            </div>
-          ) : (
-            <div className="fu">
-              <div className="tbanner">
-                <div className="tlbl">Total a cobrar</div>
-                <div className="tamt">{fmt(total)}</div>
-              </div>
-              <div className="pdis">
-                <div className="pdislbl">Paga con</div>
-                <div className="pdisval">{payAmt ? fmt(parseFloat(payAmt)||0) : '$0.00'}</div>
-                {valid && <div style={{fontSize:'13px',color:'var(--gr)',fontWeight:'800',marginTop:'3px'}}>Feria: {fmt(change)}</div>}
-              </div>
-              {quickAmts.length > 0 && (
-                <>
-                  <div className="lbl">Monto rápido</div>
-                  <div className="qpay">
-                    {quickAmts.map(a => <button key={a} className="qpbtn" onClick={()=>setPayAmt(String(a))}>{fmt(a)}</button>)}
-                  </div>
-                </>
-              )}
-              <div className="npad">
-                {['1','2','3','4','5','6','7','8','9'].map(n =>
-                  <button key={n} className="npb" onClick={()=>app2(n)}>{n}</button>
-                )}
-                <button className="npb z2" onClick={()=>app2('0')}>0</button>
-                <button className="npb dl" onClick={()=>setPayAmt(p=>p.slice(0,-1))}>⌫</button>
-              </div>
-              <button className="btn btnOk" onClick={confirmPay} disabled={!valid||busy} style={{opacity:valid?1:.4}}>
-                {busy ? <><span className="spin"/>Guardando...</> : valid ? `Confirmar · Feria ${fmt(change)}` : 'Ingresa el monto pagado'}
-              </button>
-              <div style={{height:'10px'}}/>
-              <div className="dvl">Resumen de la comanda</div>
-              {(() => {
-                const payPersons = [...new Set((order?.items||[]).map(i=>i.person_name||'').filter(Boolean))];
-                const showPersons = payPersons.length > 1;
-                return showPersons ? payPersons.map(p => (
-                  <div key={p}>
-                    <div className="pgrp-hdr"><span className="pgrp-name">👤 {p}</span><div className="pgrp-line"/></div>
-                    {(order?.items||[]).filter(i=>i.person_name===p).map(i => (
-                      <div key={(i.product_id||i.productId)+'::'+p} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid var(--bd)',fontSize:'13px'}}>
-                        <div>
-                          <span style={{color:'var(--cr)'}}>{i.qty}x {i.name}</span>
-                          {i.notes && <div className="note-txt">📝 {i.notes}</div>}
-                        </div>
-                        <span style={{color:'var(--mu)',fontWeight:'700'}}>{fmt(i.price*i.qty)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )) : (order?.items||[]).map(i => (
-                  <div key={i.product_id||i.productId} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid var(--bd)',fontSize:'13px'}}>
-                    <div>
-                      <span style={{color:'var(--cr)'}}>{i.qty}x {i.name}</span>
-                      {i.notes && <div className="note-txt">📝 {i.notes}</div>}
-                    </div>
-                    <span style={{color:'var(--mu)',fontWeight:'700'}}>{fmt(i.price*i.qty)}</span>
-                  </div>
-                ));
-              })()}
-            </div>
-          )}
-        </div>
-      </div>
-      </>
-    );
-  }
-
-  /* Formulario de producto */
-  if (screen === 'pform') return (
-    <>
-    <style>{CSS}</style>
-    <div className="app">
-      <div className="hdr">
-        <div><div className="hdr-title">{pForm?.id ? 'Editar' : 'Nuevo'} Producto</div></div>
-        <button className="ico" onClick={()=>{setScreen('main');setTab('products');}}>✕</button>
-      </div>
-      <div className="scrl">
-        <span className="lbl">Imagen del producto</span>
-        {pForm?.image ? (
-          <div style={{position:'relative',marginBottom:'10px'}}>
-            <img src={pForm.image} style={{width:'100%',height:'160px',borderRadius:'10px',objectFit:'cover'}} alt=""/>
-            <button onClick={()=>setPForm(f=>({...f,image:null}))}
-              style={{position:'absolute',top:'8px',right:'8px',background:'rgba(0,0,0,.78)',border:'none',borderRadius:'50%',width:'28px',height:'28px',color:'#fff',cursor:'pointer',fontSize:'13px'}}>✕</button>
-            <label style={{display:'block',textAlign:'center',marginTop:'7px',cursor:'pointer'}}>
-              <input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleImg}/>
-              <span style={{fontSize:'12px',color:'var(--pri)',fontWeight:'800'}}>Cambiar imagen</span>
-            </label>
-          </div>
-        ) : (
-          <label className="imgph">
-            <input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleImg}/>
-            <span style={{fontSize:'36px'}}>📷</span>
-            <span style={{fontSize:'13px',color:'var(--mu)',fontWeight:'700'}}>Toca para agregar foto</span>
-            <span style={{fontSize:'11px',color:'var(--dim)'}}>Cámara o galería</span>
-          </label>
-        )}
-        <div style={{height:'12px'}}/>
-        <span className="lbl">Nombre del producto</span>
-        <input className="inp" value={pForm?.name||''} onChange={e=>setPForm(f=>({...f,name:e.target.value}))} placeholder="Ej: Taco de Asada"/>
-        <div style={{height:'13px'}}/>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'11px'}}>
-          <div>
-            <span className="lbl">Precio ($)</span>
-            <input className="inp" type="number" inputMode="decimal" value={pForm?.price||''} onChange={e=>setPForm(f=>({...f,price:e.target.value}))} placeholder="0.00"/>
-          </div>
-          <div>
-            <span className="lbl">Categoría</span>
-            <input className="inp" value={pForm?.category||''} onChange={e=>setPForm(f=>({...f,category:e.target.value}))} placeholder="Tacos" list="cats-dl"/>
-            <datalist id="cats-dl">{catGroups.map(c=><option key={c} value={c}/>)}</datalist>
-          </div>
-        </div>
-        <div style={{height:'24px'}}/>
-        <button className="btn btnP" onClick={saveProd} disabled={busy}>
-          {busy ? <><span className="spin"/>Guardando...</> : pForm?.id ? 'Guardar cambios' : 'Agregar producto'}
-        </button>
-        {pForm?.id && (
-          <>
-            <div style={{height:'10px'}}/>
-            <button className="btn btnDn" onClick={()=>{delProd(pForm.id);setScreen('main');setTab('products');}}>
-              Eliminar producto
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-    </>
-  );
-
-  /* ─────────────────────────────────────────────
-     MAIN TABS
-  ───────────────────────────────────────────── */
-  const TabOrders = (
-    <>
-      <div style={{padding:'14px 14px 0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:'22px',color:'var(--cr)'}}>Comandas</div>
-          <div style={{fontSize:'11px',color:'var(--mu)'}}>{activeOrds.length} activa{activeOrds.length!==1?'s':''}</div>
-        </div>
-        <button className="btn btnP" onClick={newOrd} style={{width:'auto',padding:'11px 18px',fontSize:'14px'}}>+ Nueva</button>
-      </div>
-      <div className="scrl" style={{paddingTop:'10px'}}>
-        {activeOrds.length === 0 ? (
-          <div className="empty">
-            <div className="emico">🌮</div>
-            <div className="emtit">Sin comandas activas</div>
-            <div style={{fontSize:'13px'}}>Toca "+ Nueva" para empezar</div>
-          </div>
-        ) : activeOrds.map(o => {
-          const t = orderTotal(o);
-          return (
-            <div key={o.id} className="ocard fu" onClick={()=>openOrd(o)}>
-              <div style={{width:'42px',height:'42px',background:'var(--pri)',borderRadius:'11px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>🌮</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="olbl">{o.label}</div>
-                <div className="omt">{(o.items||[]).length} productos · {fmtTime(o.created_at)}</div>
-              </div>
-              <div style={{textAlign:'right'}}>
-                <div className="otot">{fmt(t)}</div>
-                <span className="bdg bdg-ok">Activa</span>
-              </div>
-            </div>
-          );
-        })}
-        {paidOrds.length > 0 && (
-          <>
-            <div className="dvl">Últimas cobradas</div>
-            {paidOrds.slice(0, 8).map(o => (
-              <div key={o.id} className="ocard" onClick={()=>openOrd(o)} style={{opacity:.65}}>
-                <div style={{width:'42px',height:'42px',background:'var(--s3)',borderRadius:'11px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0}}>✓</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div className="olbl">{o.label}</div>
-                  <div className="omt">{fmtTime(o.paid_at)} · Pagó {fmt(o.paid)}</div>
-                </div>
-                <div style={{textAlign:'right'}}>
-                  <div className="otot" style={{color:'var(--mu)'}}>{fmt(o.total)}</div>
-                  <span className="bdg bdg-pd">Cobrada</span>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-    </>
-  );
-
-  const TabProducts = (
-    <>
-      <div style={{padding:'14px 14px 0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:'22px',color:'var(--cr)'}}>Productos</div>
-          <div style={{fontSize:'11px',color:'var(--mu)'}}>{prods.length} en catálogo</div>
-        </div>
-        <button className="btn btnP" onClick={newProd} style={{width:'auto',padding:'11px 18px',fontSize:'14px'}}>+ Agregar</button>
-      </div>
-      <div className="scrl" style={{paddingTop:'10px'}}>
-        {catGroups.map(cat => {
-          const cp = prods.filter(p => p.category === cat);
-          return (
-            <div key={cat}>
-              <div className="dvl">{cat}</div>
-              {cp.map(p => (
-                <div key={p.id} className="pli fu">
-                  {p.image ? <img src={p.image} className="pliimg" alt={p.name}/> : <div className="pliiph">🌮</div>}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:'14px',fontWeight:'800',color:'var(--cr)'}}>{p.name}</div>
-                    <div style={{fontSize:'11px',color:'var(--mu)'}}>{p.category}</div>
-                    <div style={{fontSize:'15px',color:'var(--pri)',fontWeight:'800'}}>{fmt(p.price)}</div>
-                  </div>
-                  <div style={{display:'flex',gap:'7px'}}>
-                    <button className="ico" onClick={()=>editProd(p)} style={{color:'var(--amb)'}}>✏</button>
-                    <button className="ico" onClick={()=>delProd(p.id)} style={{color:'var(--dn)'}}>🗑</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        })}
-        {prods.length === 0 && (
-          <div className="empty">
-            <div className="emico">📦</div>
-            <div className="emtit">Sin productos</div>
-            <div style={{fontSize:'13px'}}>Agrega tu primer producto</div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  const TabReports = (
-    <>
-      <div style={{padding:'14px 14px 0'}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:'22px',color:'var(--cr)'}}>Corte del día</div>
-          {report?.orders?.length > 0 && (
-            <button className="btn btnS" onClick={exportCSV} style={{padding:'8px 13px',fontSize:'12px',width:'auto'}}>↓ CSV</button>
-          )}
-        </div>
-        <input type="date" className="inp" value={repDate} onChange={e=>loadReport(e.target.value)}/>
-      </div>
-      <div className="scrl" style={{paddingTop:'10px'}}>
-        {!report ? (
-          <div className="empty"><div style={{fontSize:'28px',marginBottom:'10px'}}>⏳</div><div style={{fontSize:'13px'}}>Cargando reporte...</div></div>
-        ) : (
-          <>
-            <div className="sgrd">
-              <div className="sc"><div className="sv">{fmt(report.summary?.total)}</div><div className="sl">Total vendido</div></div>
-              <div className="sc"><div className="sv">{report.summary?.count}</div><div className="sl">Comandas</div></div>
-              <div className="sc">
-                <div className="sv">{(report.orders||[]).flatMap(o=>o.items||[]).filter(i=>prods.find(p=>p.id===i.product_id)?.category==='Tacos').reduce((s,i)=>s+i.qty,0)}</div>
-                <div className="sl">Tacos vendidos</div>
-              </div>
-              <div className="sc"><div className="sv">{fmt(report.summary?.avg)}</div><div className="sl">Promedio</div></div>
-            </div>
-            {report.orders?.length > 0 ? (
+            {paidOrds.length > 0 && (
               <>
-                <div className="dvl">Ventas del {repDate}</div>
-                {report.orders.map(o => (
-                  <div key={o.id} className="card" style={{marginBottom:'8px'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'7px'}}>
-                      <div style={{fontWeight:'800',fontSize:'15px'}}>{o.label}</div>
-                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:'20px',color:'var(--pri)'}}>{fmt(o.total)}</div>
+                <div className="dvl">Últimas cobradas</div>
+                {paidOrds.slice(0, 8).map(o => (
+                  <div key={o.id} className="ocard" onClick={() => openOrd(o)} style={{ opacity: .65 }}>
+                    <div style={{ width: '42px', height: '42px', background: 'var(--s3)', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>✓</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="olbl">{o.label}</div>
+                      <div className="omt">{fmtTime(o.paid_at)} · Pagó {fmt(o.paid)}</div>
                     </div>
-                    <div style={{fontSize:'11px',color:'var(--mu)',marginBottom:'8px'}}>{fmtTime(o.paid_at)}</div>
-                    {(() => {
-                      const rPersons = [...new Set((o.items||[]).map(i=>i.person_name||'').filter(Boolean))];
-                      const showP = rPersons.length > 1;
-                      return showP ? rPersons.map(p => (
-                        <div key={p}>
-                          <div style={{fontSize:'10px',color:'var(--amb)',fontWeight:'800',marginTop:'6px',marginBottom:'2px'}}>👤 {p}</div>
-                          {(o.items||[]).filter(i=>i.person_name===p).map(i => (
-                            <div key={i.id} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'var(--mu)',padding:'3px 0'}}>
-                              <div><span>{i.qty}x {i.name}</span>{i.notes && <span style={{color:'var(--amb)',fontSize:'10px',marginLeft:'5px'}}>({i.notes})</span>}</div>
-                              <span>{fmt(i.price*i.qty)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )) : (o.items||[]).map(i => (
-                        <div key={i.id} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'var(--mu)',padding:'3px 0'}}>
-                          <div><span>{i.qty}x {i.name}</span>{i.notes && <span style={{color:'var(--amb)',fontSize:'10px',marginLeft:'5px'}}>({i.notes})</span>}</div>
-                          <span>{fmt(i.price*i.qty)}</span>
-                        </div>
-                      ));
-                    })()}
-                    <div style={{borderTop:'1px solid var(--bd)',marginTop:'8px',paddingTop:'8px',display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
-                      <span style={{color:'var(--mu)'}}>Pagó: {fmt(o.paid)}</span>
-                      <span style={{color:'var(--gr)',fontWeight:'800'}}>Feria: {fmt(o.change_amt)}</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="otot" style={{ color: 'var(--mu)' }}>{fmt(o.total)}</div>
+                      <span className="bdg bdg-pd">Cobrada</span>
                     </div>
                   </div>
                 ))}
               </>
-            ) : (
+            )}
+          </div>
+        </>
+      );
+
+      const TabProducts = (
+        <>
+          <div style={{ padding: '14px 14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '22px', color: 'var(--cr)' }}>Productos</div>
+              <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{prods.length} en catálogo</div>
+            </div>
+            <button className="btn btnP" onClick={newProd} style={{ width: 'auto', padding: '11px 18px', fontSize: '14px' }}>+ Agregar</button>
+          </div>
+          <div className="scrl" style={{ paddingTop: '10px' }}>
+            {catGroups.map(cat => {
+              const cp = prods.filter(p => p.category === cat);
+              return (
+                <div key={cat}>
+                  <div className="dvl">{cat}</div>
+                  {cp.map(p => (
+                    <div key={p.id} className="pli fu">
+                      {p.image ? <img src={p.image} className="pliimg" alt={p.name} /> : <div className="pliiph">🌮</div>}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--cr)' }}>{p.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{p.category}</div>
+                        <div style={{ fontSize: '15px', color: 'var(--pri)', fontWeight: '800' }}>{fmt(p.price)}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '7px' }}>
+                        <button className="ico" onClick={() => editProd(p)} style={{ color: 'var(--amb)' }}>✏</button>
+                        <button className="ico" onClick={() => delProd(p.id)} style={{ color: 'var(--dn)' }}>🗑</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            {prods.length === 0 && (
               <div className="empty">
-                <div className="emico">📊</div>
-                <div className="emtit">Sin ventas este día</div>
-                <div style={{fontSize:'13px'}}>Selecciona otra fecha</div>
+                <div className="emico">📦</div>
+                <div className="emtit">Sin productos</div>
+                <div style={{ fontSize: '13px' }}>Agrega tu primer producto</div>
               </div>
             )}
-          </>
-        )}
-      </div>
-    </>
-  );
+          </div>
+        </>
+      );
 
-  const navItems = [
-    { id: 'orders',   label: 'Comandas', ico: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="17" x2="12" y2="17"/></svg> },
-    { id: 'products', label: 'Productos', ico: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
-    { id: 'reports',  label: 'Corte',    ico: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
-  ];
+      const TabReports = (
+        <>
+          <div style={{ padding: '14px 14px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '22px', color: 'var(--cr)' }}>Corte del día</div>
+              {report?.orders?.length > 0 && (
+                <button className="btn btnS" onClick={exportCSV} style={{ padding: '8px 13px', fontSize: '12px', width: 'auto' }}>↓ CSV</button>
+              )}
+            </div>
+            <input type="date" className="inp" value={repDate} onChange={e => loadReport(e.target.value)} />
+          </div>
+          <div className="scrl" style={{ paddingTop: '10px' }}>
+            {!report ? (
+              <div className="empty"><div style={{ fontSize: '28px', marginBottom: '10px' }}>⏳</div><div style={{ fontSize: '13px' }}>Cargando reporte...</div></div>
+            ) : (
+              <>
+                <div className="sgrd">
+                  <div className="sc"><div className="sv">{fmt(report.summary?.total)}</div><div className="sl">Total vendido</div></div>
+                  <div className="sc"><div className="sv">{report.summary?.count}</div><div className="sl">Comandas</div></div>
+                  <div className="sc">
+                    <div className="sv">{(report.orders || []).flatMap(o => o.items || []).filter(i => prods.find(p => p.id === i.product_id)?.category === 'Tacos').reduce((s, i) => s + i.qty, 0)}</div>
+                    <div className="sl">Tacos vendidos</div>
+                  </div>
+                  <div className="sc"><div className="sv">{fmt(report.summary?.avg)}</div><div className="sl">Promedio</div></div>
+                </div>
+                {report.orders?.length > 0 ? (
+                  <>
+                    <div className="dvl">Ventas del {repDate}</div>
+                    {report.orders.map(o => (
+                      <div key={o.id} className="card" style={{ marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+                          <div style={{ fontWeight: '800', fontSize: '15px' }}>{o.label}</div>
+                          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '20px', color: 'var(--pri)' }}>{fmt(o.total)}</div>
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--mu)', marginBottom: '8px' }}>{fmtTime(o.paid_at)}</div>
+                        {(() => {
+                          const rPersons = [...new Set((o.items || []).map(i => i.person_name || '').filter(Boolean))];
+                          const showP = rPersons.length > 1;
+                          return showP ? rPersons.map(p => (
+                            <div key={p}>
+                              <div style={{ fontSize: '10px', color: 'var(--amb)', fontWeight: '800', marginTop: '6px', marginBottom: '2px' }}>👤 {p}</div>
+                              {(o.items || []).filter(i => i.person_name === p).map(i => (
+                                <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--mu)', padding: '3px 0' }}>
+                                  <div><span>{i.qty}x {i.name}</span>{i.notes && <span style={{ color: 'var(--amb)', fontSize: '10px', marginLeft: '5px' }}>({i.notes})</span>}</div>
+                                  <span>{fmt(i.price * i.qty)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )) : (o.items || []).map(i => (
+                            <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--mu)', padding: '3px 0' }}>
+                              <div><span>{i.qty}x {i.name}</span>{i.notes && <span style={{ color: 'var(--amb)', fontSize: '10px', marginLeft: '5px' }}>({i.notes})</span>}</div>
+                              <span>{fmt(i.price * i.qty)}</span>
+                            </div>
+                          ));
+                        })()}
+                        <div style={{ borderTop: '1px solid var(--bd)', marginTop: '8px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                          <span style={{ color: 'var(--mu)' }}>Pagó: {fmt(o.paid)}</span>
+                          <span style={{ color: 'var(--gr)', fontWeight: '800' }}>Feria: {fmt(o.change_amt)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="empty">
+                    <div className="emico">📊</div>
+                    <div className="emtit">Sin ventas este día</div>
+                    <div style={{ fontSize: '13px' }}>Selecciona otra fecha</div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      );
 
-  return (
-    <>
-    <style>{CSS}</style>
-    <div className="app">
-      <div className="hdr">
-        <div style={{display:'flex',alignItems:'center',gap:'9px'}}>
-          <span style={{fontSize:'22px'}}>🌮</span>
-          <span className="hdr-title">Taquería</span>
-        </div>
-        <button className="btn btnG" onClick={doLogout}>Salir</button>
-      </div>
+      const navItems = [
+        { id: 'orders', label: 'Comandas', ico: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" /><line x1="9" y1="7" x2="15" y2="7" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="17" x2="12" y2="17" /></svg> },
+        { id: 'products', label: 'Productos', ico: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg> },
+        { id: 'reports', label: 'Corte', ico: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg> },
+      ];
 
-      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-        {tab === 'orders'   && TabOrders}
-        {tab === 'products' && TabProducts}
-        {tab === 'reports'  && TabReports}
-      </div>
+      return (
+        <>
+          <style>{CSS}</style>
+          <div className="app">
+            <div className="hdr">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <span style={{ fontSize: '22px' }}>🌮</span>
+                <span className="hdr-title">Taquería</span>
+              </div>
+              <button className="btn btnG" onClick={doLogout}>Salir</button>
+            </div>
 
-      <div className="bnav">
-        {navItems.map(n => (
-          <button key={n.id} className={`ntab ${tab===n.id?'on':''}`} onClick={()=>{setTab(n.id);if(n.id==='reports')loadReport(repDate);}}>
-            {n.ico}
-            {n.label}
-            {n.id === 'orders' && activeOrds.length > 0 && <span className="badge">{activeOrds.length}</span>}
-          </button>
-        ))}
-      </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {tab === 'orders' && TabOrders}
+              {tab === 'products' && TabProducts}
+              {tab === 'reports' && TabReports}
+            </div>
 
-      {/* Toast */}
-      {toast && (
-        <div style={{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',background:'var(--s3)',color:'var(--cr)',padding:'9px 18px',borderRadius:'22px',fontSize:'13px',fontWeight:'700',zIndex:999,whiteSpace:'nowrap',border:'1px solid var(--dim)',boxShadow:'0 4px 20px rgba(0,0,0,.5)'}}>
-          {toast}
-        </div>
-      )}
-    </div>
-    </>
-  );
-}
+            <div className="bnav">
+              {navItems.map(n => (
+                <button key={n.id} className={`ntab ${tab === n.id ? 'on' : ''}`} onClick={() => { setTab(n.id); if (n.id === 'reports') loadReport(repDate); }}>
+                  {n.ico}
+                  {n.label}
+                  {n.id === 'orders' && activeOrds.length > 0 && <span className="badge">{activeOrds.length}</span>}
+                </button>
+              ))}
+            </div>
 
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-</script>
+            {/* Toast */}
+            {toast && (
+              <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', background: 'var(--s3)', color: 'var(--cr)', padding: '9px 18px', borderRadius: '22px', fontSize: '13px', fontWeight: '700', zIndex: 999, whiteSpace: 'nowrap', border: '1px solid var(--dim)', boxShadow: '0 4px 20px rgba(0,0,0,.5)' }}>
+                {toast}
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
 </body>
+
 </html>

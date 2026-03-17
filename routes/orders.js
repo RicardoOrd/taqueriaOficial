@@ -172,8 +172,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    // ⚡ Magia del Serverless: Actualizamos la orden, borramos items y creamos los nuevos
-    // todo en una sola petición HTTP atómica.
     await db.batch(statements, 'write');
 
     const updatedOrder = await getFullOrder(db, id);
