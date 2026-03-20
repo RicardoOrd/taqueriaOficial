@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { createClient } = require('@libsql/client');
+const { createClient } = require('@libsql/client/web');
 const bcrypt = require('bcryptjs');
 
 const db = createClient({
