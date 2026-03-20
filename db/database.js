@@ -1,14 +1,12 @@
 require('dotenv').config();
-const { createClient } = require('@libsql/client/web');
+const { createClient } = require('@libsql/client');
 const bcrypt = require('bcryptjs');
 
-// Inicializamos el cliente de Turso
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-// Inicialización asíncrona del schema
 async function initSchema() {
   try {
     await db.executeMultiple(`
@@ -52,6 +50,11 @@ async function initSchema() {
         person_name TEXT    NOT NULL DEFAULT '',
         notes       TEXT    NOT NULL DEFAULT ''
       );
+
+      CREATE INDEX IF NOT EXISTS idx_orders_status     ON orders(status);
+      CREATE INDEX IF NOT EXISTS idx_orders_paid_at    ON orders(paid_at);
+      CREATE INDEX IF NOT EXISTS idx_items_order_id    ON order_items(order_id);
+      CREATE INDEX IF NOT EXISTS idx_products_active   ON products(active);
     `);
 
     // Migración: agregar columnas nuevas si no existen

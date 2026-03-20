@@ -5,53 +5,68 @@ const { authMiddleware } = require('./middleware');
 const router = express.Router();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
-// Helper para obtener fecha/hora actual en America/Hermosillo
-// Nota: America/Hermosillo es fijo en MST (UTC-7) sin horario de verano.
+// Helper para obtener fecha/hora actual en America/Hermosillo (UTC-7, sin horario de verano)
 function getHermosilloTime() {
   const date = new Date();
   const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-  const offset = -7; // UTC-7 para Hermosillo
-  const hermosilloDate = new Date(utc + (3600000 * offset));
+  const hermosilloDate = new Date(utc + (3600000 * -7));
   return hermosilloDate.toISOString().replace('T', ' ').substring(0, 19);
 }
 
-// Helper asíncrono para obtener una orden completa con sus items
-async function getFullOrder(db, orderId) {
-  const orderRes = await db.execute({
-    sql: 'SELECT * FROM orders WHERE id = ?',
-    args: [orderId]
-  });
+/**
+ * Agrupa un array de items (con order_id) en un mapa { orderId -> [items] }.
+ * Evita N queries separadas; se llama con el resultado de un único SELECT.
+ */
+function groupItemsByOrder(itemRows) {
+  const map = {};
+  for (const item of itemRows) {
+    if (!map[item.order_id]) map[item.order_id] = [];
+    map[item.order_id].push(item);
+  }
+  return map;
+}
 
+/**
+ * Dado un array de órdenes, obtiene TODOS sus items en una sola query
+ * y los adjunta a cada orden. 1 viaje a la nube en lugar de N.
+ */
+async function attachItems(orders) {
+  if (orders.length === 0) return orders;
+
+  // Los IDs vienen de uid() → sólo caracteres [a-z0-9], seguro para SQL inline
+  const ids = orders.map(o => `'${o.id}'`).join(',');
+  const itemsRes = await db.execute(
+    `SELECT * FROM order_items WHERE order_id IN (${ids})`
+  );
+
+  const byOrder = groupItemsByOrder(itemsRes.rows);
+  return orders.map(o => ({ ...o, items: byOrder[o.id] || [] }));
+}
+
+// ─── Helper para obtener una orden completa (usado en POST / PUT) ────────────
+async function getFullOrder(orderId) {
+  const [orderRes, itemsRes] = await Promise.all([
+    db.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [orderId] }),
+    db.execute({ sql: 'SELECT * FROM order_items WHERE order_id = ?', args: [orderId] }),
+  ]);
   if (orderRes.rows.length === 0) return null;
-
-  const itemsRes = await db.execute({
-    sql: 'SELECT * FROM order_items WHERE order_id = ?',
-    args: [orderId]
-  });
-
   return { ...orderRes.rows[0], items: itemsRes.rows };
 }
 
-// GET /api/orders  (activas + últimas 20 cobradas)
+// GET /api/orders  (activas + últimas 20 cobradas + 5 canceladas)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    // ⚡ Optimización: Ejecutamos las 3 consultas principales de forma concurrente
+    // 3 queries de órdenes en paralelo (sin items todavía)
     const [activeRes, recentRes, cancelledRes] = await Promise.all([
-      db.execute("SELECT * FROM orders WHERE status = 'active' ORDER BY created_at DESC"),
-      db.execute("SELECT * FROM orders WHERE status = 'paid' ORDER BY paid_at DESC LIMIT 20"),
-      db.execute("SELECT * FROM orders WHERE status = 'cancelled' ORDER BY created_at DESC LIMIT 5")
+      db.execute("SELECT * FROM orders WHERE status = 'active'    ORDER BY created_at DESC"),
+      db.execute("SELECT * FROM orders WHERE status = 'paid'      ORDER BY paid_at    DESC LIMIT 20"),
+      db.execute("SELECT * FROM orders WHERE status = 'cancelled' ORDER BY created_at DESC LIMIT 5"),
     ]);
 
     const allOrders = [...activeRes.rows, ...recentRes.rows, ...cancelledRes.rows];
 
-    // Obtenemos los items de todas las órdenes en paralelo usando Promise.all
-    const withItems = await Promise.all(allOrders.map(async (o) => {
-      const itemsRes = await db.execute({
-        sql: 'SELECT * FROM order_items WHERE order_id = ?',
-        args: [o.id]
-      });
-      return { ...o, items: itemsRes.rows };
-    }));
+    // ✅ UNA sola query para todos los items (antes era N queries)
+    const withItems = await attachItems(allOrders);
 
     res.json(withItems);
   } catch (error) {
@@ -67,26 +82,17 @@ router.get('/report', authMiddleware, async (req, res) => {
 
   try {
     const ordersRes = await db.execute({
-      sql: `
-        SELECT * FROM orders
-        WHERE status = 'paid' AND date(paid_at) = ?
-        ORDER BY paid_at DESC
-      `,
-      args: [date]
+      sql: `SELECT * FROM orders
+            WHERE status = 'paid' AND date(paid_at) = ?
+            ORDER BY paid_at DESC`,
+      args: [date],
     });
 
     const orders = ordersRes.rows;
 
-    const withItems = await Promise.all(orders.map(async (o) => {
-      const itemsRes = await db.execute({
-        sql: 'SELECT * FROM order_items WHERE order_id = ?',
-        args: [o.id]
-      });
-      return { ...o, items: itemsRes.rows };
-    }));
+    // ✅ UNA sola query para todos los items del reporte (antes era N queries)
+    const withItems = await attachItems(orders);
 
-    // En Turso, los números pueden venir como BigInt o strings dependiendo del tipo, 
-    // nos aseguramos de sumarlos como Float.
     const total = orders.reduce((s, o) => s + (parseFloat(o.total) || 0), 0);
     const count = orders.length;
     const avg = count ? total / count : 0;
@@ -108,23 +114,21 @@ router.post('/', authMiddleware, async (req, res) => {
     const statements = [
       {
         sql: `INSERT INTO orders (id, label, status, created_at) VALUES (?, ?, 'active', ?)`,
-        args: [id, label || 'Comanda', hermosilloTime]
-      }
+        args: [id, label || 'Comanda', hermosilloTime],
+      },
     ];
 
     if (Array.isArray(items) && items.length > 0) {
       items.forEach(i => {
         statements.push({
           sql: 'INSERT INTO order_items (order_id, product_id, name, price, qty, person_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          args: [id, i.productId, i.name, i.price, i.qty, i.person_name || '', i.notes || '']
+          args: [id, i.productId, i.name, i.price, i.qty, i.person_name || '', i.notes || ''],
         });
       });
     }
 
-    // Ejecutamos todo como una sola transacción atómica en la nube
     await db.batch(statements, 'write');
-
-    const newOrder = await getFullOrder(db, id);
+    const newOrder = await getFullOrder(id);
     res.status(201).json(newOrder);
   } catch (error) {
     console.error('Error POST /orders:', error);
@@ -143,7 +147,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (existingRes.rows.length === 0) return res.status(404).json({ error: 'Comanda no encontrada' });
     const existing = existingRes.rows[0];
 
-    // Preparamos todas las sentencias SQL para enviarlas en un solo viaje
     const statements = [
       {
         sql: `
@@ -164,30 +167,23 @@ router.put('/:id', authMiddleware, async (req, res) => {
           change_amt != null ? change_amt : null,
           status || existing.status,
           hermosilloTime,
-          id
-        ]
-      }
+          id,
+        ],
+      },
     ];
 
     if (Array.isArray(items)) {
-      statements.push({
-        sql: 'DELETE FROM order_items WHERE order_id = ?',
-        args: [id]
-      });
-
-      if (items.length > 0) {
-        items.forEach(i => {
-          statements.push({
-            sql: 'INSERT INTO order_items (order_id, product_id, name, price, qty, person_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            args: [id, i.productId, i.name, i.price, i.qty, i.person_name || '', i.notes || '']
-          });
+      statements.push({ sql: 'DELETE FROM order_items WHERE order_id = ?', args: [id] });
+      items.forEach(i => {
+        statements.push({
+          sql: 'INSERT INTO order_items (order_id, product_id, name, price, qty, person_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          args: [id, i.productId, i.name, i.price, i.qty, i.person_name || '', i.notes || ''],
         });
-      }
+      });
     }
 
     await db.batch(statements, 'write');
-
-    const updatedOrder = await getFullOrder(db, id);
+    const updatedOrder = await getFullOrder(id);
     res.json(updatedOrder);
   } catch (error) {
     console.error('Error PUT /orders/:id:', error);
@@ -195,14 +191,13 @@ router.put('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// DELETE /api/orders/:id  (cancelar)
+// DELETE /api/orders/:id  (cancelar — soft delete)
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const result = await db.execute({
       sql: "UPDATE orders SET status = 'cancelled' WHERE id = ?",
-      args: [req.params.id]
+      args: [req.params.id],
     });
-
     if (result.rowsAffected === 0) return res.status(404).json({ error: 'Comanda no encontrada' });
     res.json({ ok: true });
   } catch (error) {
